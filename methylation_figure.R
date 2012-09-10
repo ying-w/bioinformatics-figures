@@ -122,13 +122,13 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer, rev.primer,
 		if(length(bis.seq) < 1) { stop("No bisulfite converted sequence entered") }
 	}
 	#cleanup: remove all \n, make capital letters (for pattern matching)
-	bis.seq = gsub("\n","",bis.seq)
-	ref.seq = gsub("\n","",ref.seq)
-	fwd.primer = toupper(fwd.primer)
+	bis.seq = toupper(gsub("[\n ]","",bis.seq)) #best way may be to remove \s+ w/PERL=TRUE
+	ref.seq = toupper(gsub("[\n ]","",ref.seq))
+	fwd.primer = toupper(fwd.primer) #should not have spaces or newlines
 	rev.primer = toupper(rev.primer)
-	bis.seq = toupper(bis.seq)
-	ref.seq = toupper(ref.seq)
 	if(rev.comp) { bis.seq = apply(as.matrix(bis.seq),1,rc) }
+	
+	#TODO check for [ACTGN] in bis.seq and ref.seq
 	
 	#strip primers at beginning and end of reference (if any)
 	#supress warning and max() to catch case of blank primers
