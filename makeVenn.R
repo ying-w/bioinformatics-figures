@@ -1,0 +1,237 @@
+#Make venn diagram from GenomicRanges
+#Author: Ying Wu daiyingw@gmail.com
+#Current Update: October 2012
+#License: ___ for private use only
+#Version: TESTING
+
+peak2GRanges = function(bedfile, type="macs")
+{
+	#type == "macs xls" #start pos +1, score -> -log?(fdr)
+	#type == "macs" #see below
+	#type == "zinba" #read w/header=T, must convert score to >1, has self overlaps 
+	#type == "homer" #
+	# cname = c("PeakID", "chr", "start", "end", "strand", "Normalized.Tag.Count", "focus.ratio",
+	# "findPeaks.Score", "Total.Tags", "Control.Tags", "Fold.Change.vs.Control", "p.val.vs.ctrl",
+	# "Fold.Change.vs.Local", "p.val.vs.Local", "Clonal.Fold.Change")
+	# g1.r = GRanges(seqnames = g1$chr, ranges = IRanges(start=as.numeric(g1$start),
+		# end=as.numeric(g1$end), names=g1$PeakID),
+		# strand=g1$strand, score=g1$Normalized.Tag.Count)
+	#careful of keeping elementmetadata the same
+	
+	#TODO: implement other types, keep in mind some have header
+	grgb = read.table(bedfile, sep="\t")
+	#type==macs
+	grg = GRanges(seqnames = Rle(grgb[,1]), ranges = IRanges(start=as.numeric(grgb[,2]),
+		end=as.numeric(grgb[,3]), names=grgb[,4]),
+		strand=Rle("+"), score=grgb[,5])
+	grg
+	#self overlaps can be removed using reduce() but it would also get rid of metadata
+}
+	
+createResultMatrix = function(typ, fo)
+{ #generate result matrix, required for every venn diagram
+	typlvl = levels(factor(typ)) #type factor
+	res = matrix(0, nrow=length(typ), ncol=length(typlvl)) #result matrix
+	colnames(res) = typlvl
+	for(i in 1:ncol(res))
+	{
+		tmp = table(queryHits(fo)[typ[subjectHits(fo)] == typlvl[i]])
+		res[as.numeric(names(tmp)),i] = tmp
+	}
+	res
+}
+
+#self overlaps will be double counted
+#self overlaps can be odd numbers:
+#<--- 1 --->                   #self overlap
+#       <--- 1 --->            #2 overlap
+#              <--- 2 --->     #1 overlap
+
+extractOverlap = function(..., res, typ)
+{  #http://stackoverflow.com/questions/3057341/how-to-use-rs-ellipsis-feature-when-writing-your-own-function
+	#this is to read in case where 1st argument is a list
+	#there is probably a better way to do this
+	if(length(list(...)) == 1) { argv = as.list(...) }
+	else { argv = list(...) }
+	#cat(paste("DEBUG: ",paste(argv, collapse=" "),"\n"))
+	
+	#input checking (TODO)
+	if(length(argv) == 0) { stop("Must specify at least one set\n\tUsage: extractOverlap(1,2,res=res,typ=typ)") }
+	#if(length(argv) > ncol(res)) { stop("number of overlaps greater than sets in venn diagram") }
+	argv = as.character(argv)
+	if(!all(argv %in% colnames(res))) { 
+		stop("Invalid set: ", paste(argv[!argv %in% colnames(res)], collapase=""), 
+		"\n\tpossible sets are: ", paste(colnames(res), collapase="")) 
+	}
+	
+	basecol = colnames(res) == argv[1] 
+	curtyp = typ == argv[1]
+	ret = NULL
+	
+	#must wrap w/as.matrix to account for case of 1 row
+	if(length(argv) == 1) { ret = apply(as.matrix(res[curtyp, !basecol] == 0), 1, all) } #unique to base
+	if(length(argv) == 2 && argv[1] == argv[2]) { #self overlap
+		ret = res[curtyp, basecol] > 0 & apply(as.matrix(res[curtyp, !basecol] == 0), 1, all) 
+	}
+	argv = unique(argv) #get rid of duplicates (should not exist anyways)
+	
+	if(length(argv) >= 2 && argv[1] != argv[2]) { #everything else
+		othercol = as.matrix(res[curtyp, !(colnames(res) %in% argv)])
+		if(ncol(othercol) == 0) { 
+			othercol = rep(TRUE, nrow(othercol))
+		} else {
+			othercol = apply(othercol == 0, 1, all) #all others == 0
+		}
+		ret = apply(as.matrix(res[curtyp, colnames(res) %in% argv[-1]]) > 0, 1, all) & #all specified sets are >0
+			 othercol #all others == 0
+	}
+	ret
+}
+
+print_overlap = function(..., res, typ) {
+	#called by createOverlapMatrix()
+	#cat(paste("DEBUG: Processing",paste(as.character(...), collapse=" "),"\n"))
+	n = ncol(res)
+	tf = factor(typ)
+	arow = matrix(0,1,n)
+	if(n == length(...)) {
+		for(i in 1:n) {
+			arow[,i] = sum(extractOverlap(as.list(levels(tf)[c(i:n,1:i)[1:n]]),res=res,typ=typ))
+		}
+	} else {
+		arow = sapply(lapply(strsplit(paste(levels(tf)[c(1:n)], paste(as.character(...),collapse=" ")),split=" "), extractOverlap, res=res, typ=typ),sum)
+	}
+	arow
+}
+
+readinGRanges = function(...) {
+	glg = GRangesList(...)
+	if(length(glg) < 2) { stop("Need more ranges to compare") }
+	if(length(glg) > 4) { warning("only tested up to 5 ranges") } #this somewhere else
+	#typ = rep(2^(0:(length(glg)-1)),as.numeric(lapply(glg, length))) 
+	#fo = findOverlaps(c(g1.r, g2.r, g12.r, .ignoreElementMetadata=TRUE), ignoreSelf=T)
+	typ = rep(as.character(substitute(list(...)))[-1L], as.numeric(lapply(glg, length))) #since lapplay returns list
+	fo = findOverlaps(unlist(glg), ignoreSelf=T)
+	
+	res = createResultMatrix(typ, fo)
+	#cat(paste(c(paste(colnames(res), as.character(substitute(list(...)))[-1L],sep=" = "),""),collapse="\n"))	
+	cbind(typ,res)
+}
+
+createOverlapMatrix = function(res, typ) {
+	#Explain what this function does
+	
+	n = ncol(res)
+	tf = factor(typ)
+	last_printed = n
+	overlap = matrix(0, sum(choose(n,seq(n-2,0,by=-2)))+2,n)
+	rownames(overlap) = 1:nrow(overlap) #needs initalization before assignment
+	colnames(overlap) = levels(tf)
+	current_row = 1
+	
+	for(i in n:0) {
+		#cat(paste("DEBUG: i=", i, "current_row =", current_row, "\n"))
+		if(i == n-1) { 
+			overlap[current_row,] = print_overlap(levels(tf),res=res, typ=typ)
+			rownames(overlap)[current_row] = "all"
+			current_row = current_row+1 
+		} else if(i == last_printed-2) { 
+			if(i == 0) {
+				overlap[current_row,] = sapply(apply(rbind(levels(tf), levels(tf)), 2, extractOverlap, res=res, typ=typ),sum)
+				rownames(overlap)[current_row] = "self"
+				current_row = current_row+1 
+			} else {
+				overlap[current_row:(current_row+choose(n,i)-1),] = t(apply(combn(levels(tf), i), 2, print_overlap, res=res, typ=typ)) 
+				last_printed = i
+				rownames(overlap)[current_row:(current_row+choose(n,i)-1)] = apply(combn(levels(tf), i),2,paste, collapse=" ")
+				current_row = current_row + choose(n,i)
+			}
+		}
+	}
+	overlap[nrow(overlap),] = t(apply(combn(levels(tf), i), 2, print_overlap, res=res, typ=typ))
+	rownames(overlap)[nrow(overlap)] = "unique"
+	overlap
+}
+
+myVenn = function(res, typ, overlap=NA) {
+	if(any(is.na(overlap))) { overlap = createOverlapMatrix(res, typ) }
+	
+	#see createOverlapMatrix() for details
+	n = ncol(res)
+	tf = factor(typ)
+	last_printed = n
+	counter = matrix(0, sum(choose(n,seq(n-2,0,by=-2)))+2,n)
+	rownames(counter) = 1:nrow(counter) #needs initalization before assignment
+	colnames(counter) = levels(tf)
+	current_row = 1
+	weight = 2^(0:(n-1))
+	
+	for(i in n:0) {
+		if(i == n-1) { 
+			counter[current_row,] = rep(2^n-1, n)
+			rownames(counter)[current_row] = "all"
+			current_row = current_row+1 
+		} else if(i == last_printed-2) { 
+			if(i == 0) {
+				counter[current_row,] = rep(0,n)
+				rownames(counter)[current_row] = "self"
+				current_row = current_row+1 
+			} else {
+				#good luck -
+				#combn() will generate the rows, weight will hold the column 
+				#sum(unique()) will give you value for that cell in matrix
+				#combn() should be added to every weight giving you each row
+				#there might be a more readable way of doing this but should still need 2x apply
+				counter[current_row:(current_row+choose(n,i)-1),] = t(apply(combn(weight, i), 2, function(z) { 
+					sapply(weight, function(x,y) { sum(unique(c(x,y))) }, z) }))
+
+				last_printed = i
+				rownames(counter)[current_row:(current_row+choose(n,i)-1)] = apply(combn(levels(tf), i),2,paste, collapse=" ")
+				current_row = current_row + choose(n,i)
+			}
+		}
+	}
+	counter[counter %in% weight] = 0 #remove self overlaps
+	counter[nrow(counter),] = weight
+	rownames(counter)[nrow(counter)] = "unique"
+
+	#create venn diagram using 
+	if(!require("Vennerable", quietly = TRUE)) { stop("Missing Vennerable library. Please install via:
+	install.packages(\"Vennerable\", repos=\"http://R-Forge.R-project.org\", dependencies=TRUE) ")}
+	vc = sapply(1:(2^(n)-1), function(x) { round(median(overlap[counter %in% x])) })
+	plot(Venn(SetNames=colnames(res), Weight=c(0,vc)), doWeights=FALSE)
+	
+	overlap
+}
+
+runall = function(...) {
+	#suppressMessages(gc(verbose=FALSE)) #it likes to talkings
+	#can probably combine res/typ 
+	tmp = readinGRanges(...) #split tmp into res/typ
+	typ = tmp[,1]
+	res = apply(tmp[,2:ncol(tmp)], 2, as.numeric)
+	rm(tmp)
+	overlap = createOverlapMatrix(res,typ)
+	myVenn(res, typ, overlap)
+}
+
+example = function() {
+	g1 = read.table("./high1_peaks.bed", sep="\t")
+	g2 = read.table("./high2_peaks.bed", sep="\t")
+	g12 = read.table("./high_peaks.bed", sep="\t")
+	#g1.r = BED2RangedData(g1)
+	#g1.r = as(g1.r, "GRanges")
+
+	#note score change
+	g1.r = GRanges(seqnames = Rle(g1[,1]), ranges = IRanges(start=as.numeric(g1[,2]),
+		end=as.numeric(g1[,3]), names=g1[,4]),
+		strand=Rle("+"), score=g1[,5])
+	g2.r = GRanges(seqnames = Rle(g2[,1]), ranges = IRanges(start=as.numeric(g2[,2]),
+		end=as.numeric(g2[,3]), names=g2[,4]),
+		strand=Rle("+"), score=g2[,5])
+	g12.r = GRanges(seqnames = Rle(g12[,1]), ranges = IRanges(start=as.numeric(g12[,2]),
+		end=as.numeric(g12[,3]), names=g12[,4]),
+		strand=Rle("+"), score=g12[,5])
+
+	runall(g1.r, g2.r, g12.r)
+}
