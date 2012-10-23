@@ -19,7 +19,7 @@ Reference to be used to identify potential CpG and GpCs sites
 Bisulfate converted sequence (files must end in .txt or .fasta)
 
 1. In a multi-fasta file  
-	
+`	
 	>clone1
 	atggatgttttaggttttttagaggatggttgagtgggttgtaaggatag
 	gtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
@@ -29,49 +29,51 @@ Bisulfate converted sequence (files must end in .txt or .fasta)
 	>clone3
 	atggatgttttaggttttttagaggatggttgagtgggttgtaaggatag
 	gtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
-	
+`	
 2. In a folder with each file being a single-fasta file
 3. In a file with each line being a different set
-	
+`
 	atggatgttttaggttttttagaggatggttgagtgggttgtaaggataggtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
 	atggatgttttaggttttttagaggatggttgagtgggttgtaaggataggtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
 	atggatgttttaggttttttagaggatggttgagtgggttgtaaggataggtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
-	
+`	
 Primer sequence (optional) in 5'->3' orientation
 
-Introduction
-------------
+Overview
+--------
 Talk about how the program works here
 
-Directions
-----------
+Example
+-------
 start up an R (or Rstudio) session and load the script using 
 
-	source("methylation_figure.R") 
+	source("methylcircleplot.R") 
 
 If the command does not work, make sure the R session is in the same folder as the location of the file you downloaded (use `getwd()` to check and `setwd()` to change)
 
 Next, specify the reference sequence and file/folder with bisulfite sequence
 
-	ref.seq = "???"
+	ref.seq = "GGAGTGAAGGCGGGACTTGTGCGGTTACCAGCGGAAATGCCTCGGGGTCAGAAGTCGCAGGAGAGATAGACAGCTGCTGAACCAATGGGACCAGCGGATGGGGCGGATGTTATCTACCATTGGTGAACGTTAGAAACGAATAGCAGCCAATGAATCAGCTGGGGGGGGCGGAGCAGTGACGTTTATTGCGGAGGGGGCCGCTTCGAATCGGCGGCGGCCAGCTTGGTGGCCTGGGCCAATGAACGGCCTCCAACGAGCAGGGCCTTCACCAATCGGCGGCCTCCACGACGGGGCTGGGGGAGGGTATAT"
 	bis.seq = "clone.fasta"
 
 Lastly, specify primers or any other options you want
 
-	fwd.primer = "???"
-	rev.primer = "???"
+	fwd.primer = "GAGAAGAAAAAGTTTAGATTTTATAG"
+	rev.primer = "AAACACCCCAATAAATCAATC"
+	reference=TRUE
+	NOME=2
 	
 To generate the figure run the following command
 
-	methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer)
+	methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer, reference=reference, NOME=NOME)
 	
-If you have	a certain format / size you require the figure to be in:
+After you have created a figre you like you can save it by using the following command:
 	
 	png(filename="??", width = 480, height = 480, units = "px")
-	methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer)
+	methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer, reference=reference, NOME=NOME)
 	dev.off()
 	
-for more:
+For more options on output format (such as tiff):
 http://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/png.html
 you can also export to pdf this way
 
@@ -95,14 +97,16 @@ col.me -- default = "black", color of methylated CpG
 
 col.gme -- default = "lightgreen", color of methylated GpC
 
-col.gum -- default = "lightblue", color of unmethylated GpC
+col.gum -- default = "aliceblue", color of unmethylated GpC
 
 verbose -- default = TRUE, Display diagnostic messages
 
-cloneName -- default = NULL, Specify sample names (Y-axis labels)
+sampleName -- default = NULL, Specify sample names (Y-axis labels)
 
-getAln -- default = FALSE, return alignment between reference and samples
+getAln -- default = FALSE, Return alignment between reference and samples of class PairwiseAlignedFixedSubject 
 
 Additional Notes
 ----------------
-Talk about issues with resizing
+Talk about issues with resizing and scaling
+
+List of colors that R allows can be found [here](http://research.stowers-institute.org/efg/R/Color/Chart/)

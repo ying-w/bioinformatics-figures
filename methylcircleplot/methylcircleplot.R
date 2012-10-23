@@ -77,7 +77,7 @@ drawmeCircles = function(x, y, cex=2, colormatrix="white")
 methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer = "", 
 	rev.comp = FALSE, size = 2, scaling = 1, reference=FALSE, NOME=0, noaxis=FALSE,
 	col.um = "white", col.me = "black", col.gme = "lightgreen", col.gum = "aliceblue",
-	verbose = TRUE, cloneName=NULL, getAln = FALSE)
+	verbose = TRUE, sampleName=NULL, getAln = FALSE)
 {
 	#originally wanted to add reference sequence in monospace characters and have a closeness variable for plotting
 	#text(0,1,"AACCCTTTTGGGGG", family="mono", adj=c(0,0))
@@ -112,13 +112,16 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 					tmp = paste(tmp, fasta[i], sep="")
 				}
 				bis.seq[bindex] = tmp
-				if(length(cloneName) < 1) { 
-					cloneNames = fasta[fa_header]
+				if(length(sampleName) < 1) { 
+					sampleName = fasta[fa_header]
 				}
 			}
 		} else if(length(list.files(bis.seq)) > 0) { #folder
 			readlist = list.files(bis.seq)
 			readlist = readlist[grepl("\\.txt$", readlist) || grepl("\\.fasta$", readlist)]
+			if(length(sampleName) < 1) {
+				sampleName = unlist(lapply(strsplit(readlist, "\\."), "[", 1)) #split by '.' take 1st element
+			}
 			readlist = paste(bis.seq, readlist, sep="/")
 			bindex = 0
 			
@@ -135,9 +138,6 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 					for(i in 2:(c(which(fa_header),length(fasta)+1)[2]-1)) { tmp = paste(tmp, fasta[i], sep="") }
 				}
 				bis.seq[bindex] = tmp
-			}
-			if(length(cloneNames) < 1) {
-				cloneName = readlist
 			}
 		}
 	}
@@ -214,14 +214,14 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	
 	#check: user error in primer specification
 	if(all(start(pattern(rpsa)) > end(pattern(fpsa))) & all(score(fpsa) > 0) & all(score(rpsa) > 0)) {
-		message("[ATTN] reverse primer found before forward primer in clone")
+		message("[ATTN] reverse primer found before forward primer")
 		warning("reverse primer found before forward primer, swapping primers")
 		bis.seq.interest = substr(bis.seq, end(pattern(fpsa))+1, start(pattern(rpsa))-1)
 	}
 	if(any(score(fpsa) < 0) | all(score(rpsa) < 0)) {
-		message("[info] Cannot find primers in the following clone sequences: ", appendLF=FALSE)
+		message("[info] Cannot find primers in the following sequences: ", appendLF=FALSE)
 		message(paste(which(score(fpsa) < 0 | score(rpsa) < 0), collapse=" "))
-		message("-Trying reverse complement of ALL clone sequences")
+		message("-Trying reverse complement of ALL bisulfite sequences")
 		bis.seq.rc = apply(as.matrix(bis.seq),1,rc)
 		fpsarc = suppressWarnings(pairwiseAlignment(bis.seq, fwd.primer, type="local-global")) #patternOverlap works better w/Ns
 		rpsarc = suppressWarnings(pairwiseAlignment(bis.seq, rev.primer, type="local-global")) #patternOverlap works better w/Ns
@@ -266,8 +266,11 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	
 	if(verbose) { message("[info] ", paste(length(bis.seq.interest), "clones processed with average length of", 
 		round(mean(nchar(bis.seq.interest)),2), collapse=" ")) }
-	if(length(cloneName) < 1) { cloneName = 1:length(bis.seq.interest) }
-	if(length(cloneName) != length(bis.seq.interest)) { message("[ATTN] invalid clone names"); cloneName = 1:length(bis.seq.interest)}
+	if(length(sampleName) < 1) { sampleName = 1:length(bis.seq.interest) }
+	if(length(sampleName) != length(bis.seq.interest)) { 
+		message("[ATTN] invalid number of sample names, using numbers isntead"); 
+		sampleName = 1:length(bis.seq.interest)
+	}
 	
 	#check lengths
 	difflength = nchar(bis.seq.interest) - nchar(ref.seq)
@@ -323,7 +326,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		#check if current sample failed 
 		#if(i %in% difflength) { next; } #length must match (very conservative)
 		if(nchar(bis.seq.interest[i]) == 0 || score(pwa)[i] <= 0) {  #primer sequence not found
-			message(paste("Clone", i, "skipped")); next; 
+			message(paste("Clone", i, "skipped due to low quality match")); next; 
 		} 
 
 		#mms = mismatchSummary(pwa[i])$subject #this is what holds the interesting data
@@ -383,15 +386,15 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		#can also use mtext()
 		axis(1, at = c(xaxis.loc, 1), labels = c(xaxis.val, nchar(ref.seq))) 
 
-		yaxis.val = cloneName
+		yaxis.val = sampleName
 		#yaxis.loc = NULL
 		if(reference) {
 			yaxis.val = c("ref", "", yaxis.val)
 			
 		} 
-		if(NOME == 2) { yaxis.val = c(yaxis.val, "", cloneName) }
+		if(NOME == 2) { yaxis.val = c(yaxis.val, "", sampleName) }
 		#yaxis.loc = seq(1,0,length.out=length(yaxis.val))*scaling
-		axis(2, at=ypos, labels=yaxis.val, cex.axis=1)
+		axis(2, at=ypos, labels=yaxis.val, cex.axis=0.8)
 	}
 	if(NOME) { 
 		title(main=paste("Result:", 
@@ -411,17 +414,18 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 #	cex = size, pch=21, col="black", bg=col.me) #methylated, could replace w/pch=19
 
 ## INDEL TEST CASES
-# ref.seq = "GCGACGTTATTACG"
+## note that score cutoffs are much more stringent after changing to type="global"
+# ref.seq = "GCGACGTTATTACGGGA"
 # fwd.primer = ""
 # rev.primer = ""
-# bis.seq = c("GCGAGTTATTACG", "GTGATGTTATTATG", "GTGATGTTATTAG", "GTGATGTTATTAGG", "GCGACGTTATTACGC", "GCGACGTTTATTACG")
+# bis.seq = c("GTGAGTTATTACGGGA", "GTGATGTTATTATGGGA", "GTGATGTTATTAGGGA", "GTGATGTTATTAGGGGA", "GTGACGTTATTACGGGAC", "GTGACGTTTATTACGGGA")
 # methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer, scaling=1, reference=TRUE, col.um="white", col.me= "black", col.gme="#00FA9A", col.gum ="white")
 # pwa = pairwiseAlignment(bis.seq, ref.seq, type="overlap")
 ## see biostring reference for complete set of functions
 # REF:	GCGACGTTATTACG
-# CLONE1:	GCGA GTTATTACG	(missing first CG)
-# CLONE2:	GTGATGTTATTATG	(everything is unme)
-# CLONE3:	GTGATGTTATTA G	(missing last CG)
-# CLONE4:	GTGATGTTATTAGG	(mismatch at last CG)
-# CLONE5:	GCGACGTTATTACGC	(extra base at end)
-# CLONE6:	GCGACGTTTATTACG	(extra base in middle)
+# CLONE1:	GTGA GTTATTACGGGA	(missing first CG)
+# CLONE2:	GTGATGTTATTATGGGA	(everything is unme)
+# CLONE3:	GTGATGTTATTA GGGA	(missing last CG)
+# CLONE4:	GTGATGTTATTAGGGGA	(mismatch at last CG)
+# CLONE5:	GTGACGTTATTACGGGAC	(extra base at end)
+# CLONE6:	GTGACGTTTATTACGGGA	(extra base in middle)
