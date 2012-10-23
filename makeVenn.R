@@ -6,6 +6,9 @@
 
 peak2GRanges = function(bedfile, type="macs")
 {
+	#The goal of this function is to convert peak caller output to GRanges
+	#bedfile is the name file that is peak caller output (typically a bed file)
+	
 	#type == "macs xls" #start pos +1, score -> -log?(fdr)
 	#type == "macs" #see below
 	#type == "zinba" #read w/header=T, must convert score to >1, has self overlaps 
@@ -19,6 +22,7 @@ peak2GRanges = function(bedfile, type="macs")
 	#careful of keeping elementmetadata the same
 	
 	#TODO: implement other types, keep in mind some have header
+	#	macs 2 and macs 1.4 might have different output
 	grgb = read.table(bedfile, sep="\t")
 	#type==macs
 	grg = GRanges(seqnames = Rle(grgb[,1]), ranges = IRanges(start=as.numeric(grgb[,2]),
@@ -29,12 +33,16 @@ peak2GRanges = function(bedfile, type="macs")
 }
 	
 createResultMatrix = function(typ, fo)
-{ #generate result matrix, required for every venn diagram
-	typlvl = levels(factor(typ)) #type factor
+{ 
+	#generate result matrix (required for every venn diagram)
+	#results matrix has n columns where n is the number of sets being compared
+	#results matrix has nrow(fo) rows
+	
+	typlvl = levels(factor(typ)) #type (which GRanges) -> factor -> level
 	res = matrix(0, nrow=length(typ), ncol=length(typlvl)) #result matrix
 	colnames(res) = typlvl
 	for(i in 1:ncol(res))
-	{
+	{ #since num of sets being compared should be relatively low I did not apply this
 		tmp = table(queryHits(fo)[typ[subjectHits(fo)] == typlvl[i]])
 		res[as.numeric(names(tmp)),i] = tmp
 	}
@@ -49,13 +57,12 @@ createResultMatrix = function(typ, fo)
 
 extractOverlap = function(..., res, typ)
 {  #http://stackoverflow.com/questions/3057341/how-to-use-rs-ellipsis-feature-when-writing-your-own-function
-	#this is to read in case where 1st argument is a list
-	#there is probably a better way to do this
+	#this is to read in case where 1st argument is a list (probably a better way to do this)
 	if(length(list(...)) == 1) { argv = as.list(...) }
 	else { argv = list(...) }
 	#cat(paste("DEBUG: ",paste(argv, collapse=" "),"\n"))
 	
-	#input checking (TODO)
+	#TODO: input checking
 	if(length(argv) == 0) { stop("Must specify at least one set\n\tUsage: extractOverlap(1,2,res=res,typ=typ)") }
 	#if(length(argv) > ncol(res)) { stop("number of overlaps greater than sets in venn diagram") }
 	argv = as.character(argv)
@@ -73,6 +80,7 @@ extractOverlap = function(..., res, typ)
 	if(length(argv) == 2 && argv[1] == argv[2]) { #self overlap
 		ret = res[curtyp, basecol] > 0 & apply(as.matrix(res[curtyp, !basecol] == 0), 1, all) 
 	}
+	#if(length(unique(argv)) != length(argv)) { warning("Duplicate set removed") }
 	argv = unique(argv) #get rid of duplicates (should not exist anyways)
 	
 	if(length(argv) >= 2 && argv[1] != argv[2]) { #everything else
@@ -119,7 +127,15 @@ readinGRanges = function(...) {
 }
 
 createOverlapMatrix = function(res, typ) {
-	#Explain what this function does
+	#This function will create an overlap matrix
+	#An overlap matrix is a human readable matrix that enumerates all possible overlaps
+	#An example of this for a 3-way venn diagram is as follows:
+	#       A   B	C
+	#all	3	3	3
+	# A		2	7	11
+	# B		3	8	12
+	# C		4	9	13
+	#unique	5	0	14
 	
 	n = ncol(res)
 	tf = factor(typ)
