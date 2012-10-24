@@ -19,24 +19,24 @@ Reference to be used to identify potential CpG and GpCs sites
 Bisulfate converted sequence (files must end in .txt or .fasta)
 
 1. In a multi-fasta file  
-`	
-	>clone1
-	atggatgttttaggttttttagaggatggttgagtgggttgtaaggatag
-	gtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
-	>clone2
-	atggatgttttaggttttttagaggatggttgagtgggttgtaaggatag
-	gtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
-	>clone3
-	atggatgttttaggttttttagaggatggttgagtgggttgtaaggatag
-	gtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
-`	
+	
+        >clone1        
+		atggatgttttaggttttttagaggatggttgagtgggttgtaaggatag
+        gtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
+        >clone2
+        atggatgttttaggttttttagaggatggttgagtgggttgtaaggatag
+        gtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
+        >clone3
+        atggatgttttaggttttttagaggatggttgagtgggttgtaaggatag
+        gtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
+
 2. In a folder with each file being a single-fasta file
 3. In a file with each line being a different set
-`
-	atggatgttttaggttttttagaggatggttgagtgggttgtaaggataggtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
-	atggatgttttaggttttttagaggatggttgagtgggttgtaaggataggtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
-	atggatgttttaggttttttagaggatggttgagtgggttgtaaggataggtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
-`	
+
+        atggatgttttaggttttttagaggatggttgagtgggttgtaaggataggtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
+        atggatgttttaggttttttagaggatggttgagtgggttgtaaggataggtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
+        atggatgttttaggttttttagaggatggttgagtgggttgtaaggataggtcgagagggtgtagtgttaataggttttgtggtgcgatggggtattcga
+
 Primer sequence (optional) in 5'->3' orientation
 
 Overview
@@ -53,32 +53,62 @@ If the command does not work, make sure the R session is in the same folder as t
 
 Next, specify the reference sequence and file/folder with bisulfite sequence
 
-	ref.seq = "GGAGTGAAGGCGGGACTTGTGCGGTTACCAGCGGAAATGCCTCGGGGTCAGAAGTCGCAGGAGAGATAGACAGCTGCTGAACCAATGGGACCAGCGGATGGGGCGGATGTTATCTACCATTGGTGAACGTTAGAAACGAATAGCAGCCAATGAATCAGCTGGGGGGGGCGGAGCAGTGACGTTTATTGCGGAGGGGGCCGCTTCGAATCGGCGGCGGCCAGCTTGGTGGCCTGGGCCAATGAACGGCCTCCAACGAGCAGGGCCTTCACCAATCGGCGGCCTCCACGACGGGGCTGGGGGAGGGTATAT"
-	bis.seq = "clone.fasta"
-
+~~~~
+ref.seq = "GGAGTGAAGGCGGGACTTGTGCGGTTACCAGCGGAAATGCCTCGGGGTCAGAAGTCGCAGGAGAG
+	ATAGACAGCTGCTGAACCAATGGGACCAGCGGATGGGGCGGATGTTATCTACCATTGGTGAACGTTAGAAAC
+	GAATAGCAGCCAATGAATCAGCTGGGGGGGGCGGAGCAGTGACGTTTATTGCGGAGGGGGCCGCTTCGAATC
+	GGCGGCGGCCAGCTTGGTGGCCTGGGCCAATGAACGGCCTCCAACGAGCAGGGCCTTCACCAATCGGCGGCC
+	TCCACGACGGGGCTGGGGGAGGGTATAT"
+bis.seq = "clone.fasta"
+~~~~
 Lastly, specify primers or any other options you want
 
 	fwd.primer = "GAGAAGAAAAAGTTTAGATTTTATAG"
 	rev.primer = "AAACACCCCAATAAATCAATC"
-	reference=TRUE
-	NOME=2
-	
+
 To generate the figure run the following command
 
-	methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer, reference=reference, NOME=NOME)
+	methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer, reference=TRUE, NOME=2)
 	
-After you have created a figre you like you can save it by using the following command:
+After you have created a suitable figure you can save it in PNG format by using the following command:
 	
-	png(filename="??", width = 480, height = 480, units = "px")
+	png(filename="clone.png", width = 480, height = 480, units = "px")
 	methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer, reference=reference, NOME=NOME)
 	dev.off()
 	
+It is possible to adjust the width and height to be larger numbers.
 For more options on output format (such as tiff):
 http://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/png.html
 you can also export to pdf this way
 
+Whole script below:
+
+~~~~ R
+#load script
+source("methylcircleplot.R") 
+#specify reference
+ref.seq = "GGAGTGAAGGCGGGACTTGTGCGGTTACCAGCGGAAATGCCTCGGGGTCAGAAGTCGCAGGAGAG
+	ATAGACAGCTGCTGAACCAATGGGACCAGCGGATGGGGCGGATGTTATCTACCATTGGTGAACGTTAGAAAC
+	GAATAGCAGCCAATGAATCAGCTGGGGGGGGCGGAGCAGTGACGTTTATTGCGGAGGGGGCCGCTTCGAATC
+	GGCGGCGGCCAGCTTGGTGGCCTGGGCCAATGAACGGCCTCCAACGAGCAGGGCCTTCACCAATCGGCGGCC
+	TCCACGACGGGGCTGGGGGAGGGTATAT"
+#specify bisulfite converted sequence file
+bis.seq = "clone.fasta"
+#specify primers
+fwd.primer = "GAGAAGAAAAAGTTTAGATTTTATAG"
+rev.primer = "AAACACCCCAATAAATCAATC"
+#specify image name + size
+png(filename="myclones.png", width=600, height=600)
+#generate image
+methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer, reference=TRUE)
+#save image
+dev.off()
+~~~~
+
+
 Optional parameters
 -------------------
+Example of difference can be found [here](http://codingenes.wordpress.com/2012/08/23/script-methylation-figure-generation/#more-57)
 rev.comp -- default = FALSE, reverse complements bisulfate sequence
 
 size -- default = 2, size of circles

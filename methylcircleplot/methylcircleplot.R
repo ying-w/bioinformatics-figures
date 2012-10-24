@@ -394,7 +394,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		} 
 		if(NOME == 2) { yaxis.val = c(yaxis.val, "", sampleName) }
 		#yaxis.loc = seq(1,0,length.out=length(yaxis.val))*scaling
-		axis(2, at=ypos, labels=yaxis.val, cex.axis=0.8)
+		axis(2, at=ypos, labels=yaxis.val, cex.axis=0.8, las=2) #TODO: fix this so it doesnt look terrible
 	}
 	if(NOME) { 
 		title(main=paste("Result:", 
