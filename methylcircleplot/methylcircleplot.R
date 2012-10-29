@@ -97,7 +97,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		stop("Invalid NOME flag, options are: 0 (disabled), 1 (plot together), 2 (plot seperate) ") 
 	} #TRUE is 1
 	
-	#first try and open bis.seq as file
+	#load bis.seq
 	if(length(bis.seq) == 1) { #possibilities: sequence/file/folder
 		if(grepl("\\.txt$", bis.seq) || grepl("\\.fasta$", bis.seq)) { #file
 			if(verbose) { message("[info] Reading from file: ", bis.seq) }
@@ -201,11 +201,14 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		#rr2 = pairwiseAlignment(substr(ref.seq.interest,nchar(ref.seq)-nchar(rev.primer),nchar(ref.seq)), rev.primer, type="overlap")
 		#could use score but score depends on sequence length
 	} else { if(verbose) { message("[info] Reference sequence used as is") } }
-	
-	#pairwiseAlignment only returns one match
+		
+	#remember: pairwiseAlignment only returns one match
 	fpsa = suppressWarnings(pairwiseAlignment(bis.seq, fwd.primer, type="local-global")) #patternOverlap works better w/Ns
 	rpsa = suppressWarnings(pairwiseAlignment(bis.seq, rev.primer, type="local-global")) #patternOverlap works better w/Ns
 	if(fwd.primer=="" && rev.primer=="") { 
+		#TODO: test case small subsequence (think read in region)
+		#TODO: check if same length
+		#alignment method might be different if > length vs < length
 		bis.seq.interest = bis.seq  #primers already removed
 		if(verbose) { message("[info] Processing sequence without primers") }
 	} else {
@@ -213,11 +216,13 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	}
 	
 	#check: user error in primer specification
-	if(all(start(pattern(rpsa)) > end(pattern(fpsa))) & all(score(fpsa) > 0) & all(score(rpsa) > 0)) {
+	if(all(start(pattern(rpsa)) < end(pattern(fpsa))) & all(score(fpsa) > 0) & all(score(rpsa) > 0)) {
 		message("[ATTN] reverse primer found before forward primer")
 		warning("reverse primer found before forward primer, swapping primers")
-		bis.seq.interest = substr(bis.seq, end(pattern(fpsa))+1, start(pattern(rpsa))-1)
+		bis.seq.interest = substr(bis.seq, end(pattern(rpsa))+1, start(pattern(fpsa))-1)
 	}
+	
+	#primers not found
 	if(any(score(fpsa) < 0) | all(score(rpsa) < 0)) {
 		message("[info] Cannot find primers in the following sequences: ", appendLF=FALSE)
 		message(paste(which(score(fpsa) < 0 | score(rpsa) < 0), collapse=" "))
@@ -288,10 +293,13 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	
 	#identify CpGs in reference
 	gcpos = "" #length("") is 1, length(NULL) is 0. Useful since plot(x,y) requires length(x) == length(y)
+	csite = start(matchPattern("C", ref.seq)) #used to detect incomplete conversion
 	cgsite = start(matchPattern("CG", ref.seq))
+	csite = csite[!csite %in% cgsite]
 	if(NOME) { 
 		if(verbose) { message("[info] NOME mode enabled: also looking for GpCs") }
 		gcsite = end(matchPattern("GC", ref.seq))
+		csite = csite[!csite %in% gcsite]
 		ambiguousite = intersect(cgsite, gcsite)
 		cgsite = cgsite[!cgsite %in% ambiguousite]
 		gcsite = gcsite[!gcsite %in% ambiguousite]
@@ -313,6 +321,8 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		ypos = 1-seq(0,by=0.005, length.out=(ylength+spacer))
 		warning("[plot] Vertical distance between samples is low. Try plotting less samples next time")
 	}
+
+	if(NOME == 1 && verbose) { message("[plot] Plotting GpCs sites in line with CpGs sites") } 
 	
 	mesum = rep(0,length(pwa))
 	metotal = 0
@@ -323,7 +333,15 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		#curheight = ypos[i+spacer]
 		abline(h=ypos[i+spacer], lty=3, col="grey10") #only see this line if sample failed
 		
-		#check if current sample failed 
+		#check for incomplete conversion
+		convertedC = as.matrix(pwa[i])[,csite] == "T"
+		unconvertedC = as.matrix(pwa[i])[,csite] == "C"
+		if(sum(unconvertedC)/(sum(convertedC)+sum(unconvertedC)) > 0.9) { 
+			score(pwa) = 0
+			message("Clone ", i, " will be skipped due to incomplete bisulfite conversion")
+		} else if (sum(unconvertedC) > 0) { warning("Clone ", i, " has ", unconvertedC, " unconverted Cs, check bisulfite conversion") }
+		
+		#check: if current sample failed in matching
 		#if(i %in% difflength) { next; } #length must match (very conservative)
 		if(nchar(bis.seq.interest[i]) == 0 || score(pwa)[i] <= 0) {  #primer sequence not found
 			message(paste("Clone", i, "skipped due to low quality match")); next; 
@@ -333,26 +351,25 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		#mms = mms[mms$Subject == "C" & mms$Pattern == "T",] #should also check for C-N, currently assume everything else methylated
 		#mestat = cgsite %in% mms$SubjectPosition #methylation status of CpG sites
 		#above code does not take into account seq errors / indels
-		mestat = as.matrix(pwa[i])[,cgsite] == "T"
-		umestat = as.matrix(pwa[i])[,cgsite] == "C"
+		umestat = as.matrix(pwa[i])[,cgsite] == "T"
+		mestat = as.matrix(pwa[i])[,cgsite] == "C"
 		mesum[i] = sum(mestat)
 		metotal = metotal+sum(mestat)+sum(umestat)
 		
 		if(NOME) {
 			#nostat = gcsite %in% mms$SubjectPosition #methylation status of GpC sites
-			nostat = as.matrix(pwa[i])[,cgsite] == "T"
-			unostat = as.matrix(pwa[i])[,cgsite] == "C"
+			unostat = as.matrix(pwa[i])[,gcsite] == "T"
+			nostat = as.matrix(pwa[i])[,gcsite] == "C"
 			nosum[i] = sum(nostat)
 			nototal = nototal+sum(nostat)+sum(unostat)
 		} 
 		if(NOME == 1) {
-			if(verbose) { message("[plot] Plotting GpCs sites in line with CpGs sites") }
-			drawmeCircles(c(mepos[mestat],mepos[umestat],gcpos[nostat],gcpos[unostat]),ypos[i+spacer], cex = size, 
-				colormatrix=c(rep(col.um,length(mepos[mestat])), rep(col.me,length(mepos[umestat])),
-							  rep(col.gum,length(gcpos[nostat])), rep(col.gme,length(gcpos[unostat]))))
+			drawmeCircles(c(mepos[umestat],mepos[mestat],gcpos[unostat],gcpos[nostat]),ypos[i+spacer], cex = size, 
+				colormatrix=c(rep(col.um,length(mepos[umestat])), rep(col.me,length(mepos[mestat])),
+							  rep(col.gum,length(gcpos[unostat])), rep(col.gme,length(gcpos[nostat]))))
 		} else {
-		drawmeCircles(c(mepos[mestat],mepos[umestat]),ypos[i+spacer], cex = size, 
-			colormatrix=c(rep(col.um, length(mepos[mestat])),rep(col.me,length(mepos[umestat]))))
+		drawmeCircles(c(mepos[umestat],mepos[mestat]),ypos[i+spacer], cex = size, 
+			colormatrix=c(rep(col.um, length(mepos[umestat])),rep(col.me,length(mepos[mestat]))))
 		}
 	}
 	
@@ -369,11 +386,11 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 			#mms = mismatchSummary(pwa[i])$subject #this is what holds the interesting data
 			#mms = mms[mms$Subject == "C" & mms$Pattern == "T",] #should also check for C-N
 			#nostat = gcsite %in% mms$SubjectPosition #methylation status of CpG sites
-			nostat = as.matrix(pwa[i])[,cgsite] == "T"
-			unostat = as.matrix(pwa[i])[,cgsite] == "C"
+			unostat = as.matrix(pwa[i])[,gcsite] == "T"
+			nostat = as.matrix(pwa[i])[,gcsite] == "C"
 			
-			drawmeCircles(c(gcpos[nostat],gcpos[unostat]),curheight, cex = size, 
-				colormatrix=c(rep(col.gum, length(gcpos[nostat])),rep(col.gme,length(gcpos[unostat]))))			
+			drawmeCircles(c(gcpos[unostat],gcpos[nostat]),curheight, cex = size, 
+				colormatrix=c(rep(col.gum, length(gcpos[unostat])),rep(col.gme,length(gcpos[nostat]))))			
 		}
 	}
 	
@@ -394,14 +411,15 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		} 
 		if(NOME == 2) { yaxis.val = c(yaxis.val, "", sampleName) }
 		#yaxis.loc = seq(1,0,length.out=length(yaxis.val))*scaling
-		axis(2, at=ypos, labels=yaxis.val, cex.axis=0.8, las=2) #TODO: fix this so it doesnt look terrible
+		#TODO: dynamic scaling of cex based on nchar of yaxis.val
+		axis(2, at=ypos, labels=yaxis.val, cex.axis=0.8, las=2) 
 	}
 	if(NOME) { 
 		title(main=paste("Result:", 
-		round((1-sum(mesum)/(metotal))*100,2), "% methylated",
-		"| NOME", round((1-sum(nosum)/(nototal))*100,2), "% methylated"))
+		round((sum(mesum)/(metotal))*100,2), "% methylated",
+		"| NOME", round((sum(nosum)/(nototal))*100,2), "% methylated"))
 	}
-	else { title(main=paste("Result:", round((1-sum(mesum)/(metotal))*100,2), "% methylated")) }
+	else { title(main=paste("Result:", round((sum(mesum)/(metotal))*100,2), "% methylated")) }
 	
 	if(verbose) { message("[info] Done!") }
 	if(getAln) { pwa }
