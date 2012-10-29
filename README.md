@@ -7,3 +7,5 @@ Collection of scripts that will help visualize bioinformatics data
 * makeVenn.R -- will create 2-5 way venn diagrams from GRanges objects
 
 # https://github.com/github/markup
+# http://markdownr.com/
+# http://gitimmersion.com/
