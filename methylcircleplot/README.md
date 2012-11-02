@@ -45,9 +45,9 @@ Primer sequence (optional) in 5'->3' orientation
 
 Overview
 --------
-This program uses refernce to find CpG and GpC sites. Primers specified to isolate the sequence of interest. 
-Sequence of interest is then aligned to reference to find where CpG and GpC sites are. 
-These sites are checked for methylation and result is plotted.
+This program uses reference sequence to find CpG and GpC sites. Primers are used to isolate the sequence of interest. 
+Sequence of interest is then aligned to reference sequence to find corresponding CpG and GpC sites. 
+These sites are checked for methylation and result is displayed with circles.
 
 Example
 -------
@@ -112,7 +112,9 @@ It is also possible to export to pdf this way (see additional notes below)
 
 Optional parameters
 -------------------
-Example of what the parameters look like can be found [here](http://codingenes.wordpress.com/2012/08/23/script-methylation-figure-generation/#more-57)
+While reference (`ref.seq`) and bisulfite sequence (`bis.seq`) are required, there are other parameters that can be set.
+
+Some examples of what the parameters look like can be found [here](http://codingenes.wordpress.com/2012/08/23/script-methylation-figure-generation/#more-57)
 
 rev.comp -- default = FALSE, reverse complements bisulfate sequence
 
