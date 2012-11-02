@@ -4,8 +4,8 @@
 #License: GPLv3
 #
 #Step by step examples and directions can be found here:
-# https://github.com/ying-w/bioinformatics-figures/methylcricleplot
-# note to self, you cannot source https, find another way to source() from github
+# https://github.com/ying-w/bioinformatics-figures/tree/master/methylcircleplot
+# To load into R, you cannot source() https
 #
 #Quickstart directions:
 #Change ref.seq/fwd.primer/rev.primer/bis.seq in examplerun()
@@ -53,7 +53,7 @@ dev.off()
 # 1 plot together
 # 2 plot apart
 
-#colors can be set, below are defaults
+#colors can be set, below are old defaults
 #col.um = "white" (CG unmethylated)
 #col.me = "black" (CG methylated)
 #col.gum = "lightgrey" (GC unmethylated)
@@ -83,13 +83,13 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	#text(0,1,"AACCCTTTTGGGGG", family="mono", adj=c(0,0))
 	#	could not get font= or vfont= to work
 	#	adj statement makes it left justified
-	#	doesnt seem to be a way to 'stretch' font out so will not scale with plot dim changes
+	#	doesnt seem to be a way to 'stretch' font out so cannot scale with plot dim changes
 	#closeness scaling w/cex, 0 = max distance apart, 1 = closest together (scale with cex)
 	#	under default resolution, cex=2 the bubbles are about 0.5 apart
 	#	however, closeness is related to plot dim, for workaround use scaling variable
 	#bis.seq can take either txt/fasta file, folder, character vector, NULL (default)
 	#	if NULL then begin interactive prompt for sequence
-	#TODO export HTML option since word can read HTML
+	#TODO include export HTML option since word can read HTML
 	
 	if(!require("Biostrings", quietly = TRUE)) { stop("Missing Biostrings library. Please install by entering:
 	source(\"http://bioconductor.org/biocLite.R\")
@@ -98,7 +98,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		stop("Invalid NOME flag, options are: 0 (disabled), 1 (plot together), 2 (plot seperate) ") 
 	} #TRUE is 1
 	
-	#load bis.seq
+	#read in bis.seq
 	if(length(bis.seq) == 1) { #possibilities: sequence/file/folder
 		if(grepl("\\.txt$", bis.seq) || grepl("\\.fasta$", bis.seq)) { #file
 			if(verbose) { message("[info] Reading from file: ", bis.seq) }
@@ -208,9 +208,12 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	fpsa = suppressWarnings(pairwiseAlignment(bis.seq, fwd.primer, type="local-global")) #patternOverlap works better w/Ns
 	rpsa = suppressWarnings(pairwiseAlignment(bis.seq, rev.primer, type="local-global")) #patternOverlap works better w/Ns
 	if(fwd.primer=="" && rev.primer=="") { 
+		#Currently assume that with no primers, bis.seq is the same as ref.seq
 		#TODO: test case small subsequence (think read in region)
 		#TODO: check if same length
-		#alignment method might be different if > length vs < length
+		#	alignment method might be different if > length vs < length
+		#	at the same time, keep this feature as a 'shortcut' to avoid realignment
+		if(!all(nchar(bis.seq.interest) == nchar(ref.seq))) { stop("Bisulfite sequence not the same length as reference, please specify primers") }
 		bis.seq.interest = bis.seq  #primers already removed
 		if(verbose) { message("[info] Processing sequence without primers") }
 	} else {
@@ -290,7 +293,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		if(verbose) { message("[info] Reordering rows") }
 	} else if(length(sampleOrder) > 0) { message("[ATTN] sampleOrder ignored due to incorrect specification") }
 	
-	
+	#Align bisulfite sequence to reference
 	#type="global" has end gap penalty see Biostrings manual for more details
 	#pwa = pairwiseAlignment(bis.seq.interest, ref.seq, type="overlap") #used for mismatchSummary
 	pwa = pairwiseAlignment(bis.seq.interest, gsub("C","T",ref.seq), type="global")
@@ -317,7 +320,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	#use as.matrix(pairwiseAlignment(gsub("C","T",bis.seq.interest), gsub("C","T",ref.seq), type="local-global"))
 	#and look for '-' to find which column is skipped over
 		
-	#identify CpGs in reference
+	#identify CpGs/GpCs in reference
 	gcpos = "" #length("") is 1, length(NULL) is 0. Useful since plot(x,y) requires length(x) == length(y)
 	csite = start(matchPattern("C", ref.seq)) #used to detect incomplete conversion
 	cgsite = start(matchPattern("CG", ref.seq))
@@ -436,7 +439,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 			curheight = ypos[length(pwa)+i+spacer+1] #THIS LINE IS DIFFERENT
 			abline(h=curheight, lty=3, col="grey10") #only see this line if sample failed
 			
-			#check if current experiment failed 
+			#check if current experiment failed (see above)
 			if(nchar(bis.seq.interest[i]) == 0 || score(pwa)[i] <= 0) {  #primer sequence not found
 				next; 
 			} 
