@@ -1,11 +1,11 @@
 #DNA methylation figure creator
-#Author: Ying Wu daiyingw@gmail.com
-#Current Update: October 2012
+#Author: Ying Wu daiyingw@usc.edu
+#Current Update: Nov 2012
 #License: GPLv3
 #
 #Step by step examples and directions can be found here:
 # https://github.com/ying-w/bioinformatics-figures/tree/master/methylcircleplot
-# To load into R, you cannot source() https
+# Must download local copy for R, since you cannot source() https
 #
 #Quickstart directions:
 #Change ref.seq/fwd.primer/rev.primer/bis.seq in examplerun()
@@ -53,7 +53,7 @@ dev.off()
 # 1 plot together
 # 2 plot apart
 
-#colors can be set, below are old defaults
+#colors can be set, below are OLD defaults
 #col.um = "white" (CG unmethylated)
 #col.me = "black" (CG methylated)
 #col.gum = "lightgrey" (GC unmethylated)
@@ -77,19 +77,19 @@ drawmeCircles = function(x, y, cex=2, colormatrix="white")
 methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer = "", 
 	rev.comp = FALSE, size = 2, scaling = 1, reference=FALSE, NOME=0, noaxis=FALSE,
 	col.um = "white", col.me = "black", col.gme = "lightgreen", col.gum = "aliceblue",
-	verbose = TRUE, sampleName=NULL, sampleOrder = NULL, getAln = FALSE)
+	verbose = TRUE, showNumUnconverted = FALSE, cloneName=NULL, cloneOrder = NULL, getAln = FALSE)
 {
-	#originally wanted to add reference sequence in monospace characters and have a closeness variable for plotting
+	## Unimplemented ideas
+	#wanted to add reference sequence in monospace characters
 	#text(0,1,"AACCCTTTTGGGGG", family="mono", adj=c(0,0))
 	#	could not get font= or vfont= to work
 	#	adj statement makes it left justified
 	#	doesnt seem to be a way to 'stretch' font out so cannot scale with plot dim changes
-	#closeness scaling w/cex, 0 = max distance apart, 1 = closest together (scale with cex)
+	#closeness variable for plotting
+	#	scaling w/cex, 0 = max distance apart, 1 = closest together
 	#	under default resolution, cex=2 the bubbles are about 0.5 apart
 	#	however, closeness is related to plot dim, for workaround use scaling variable
-	#bis.seq can take either txt/fasta file, folder, character vector, NULL (default)
-	#	if NULL then begin interactive prompt for sequence
-	#TODO include export HTML option since word can read HTML
+	#include export highlighted HTML option since word can read HTML
 	
 	if(!require("Biostrings", quietly = TRUE)) { stop("Missing Biostrings library. Please install by entering:
 	source(\"http://bioconductor.org/biocLite.R\")
@@ -98,7 +98,12 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		stop("Invalid NOME flag, options are: 0 (disabled), 1 (plot together), 2 (plot seperate) ") 
 	} #TRUE is 1
 	
-	#read in bis.seq
+	############################################################################
+	## read in bis.seq
+	############################################################################
+	#bis.seq can take either txt/fasta file, folder, character vector, NULL (default)
+	#	if NULL then begin interactive prompt for sequence
+	#TODO: if end in fasta/txt read it in as file to account for dir(folder) case
 	if(length(bis.seq) == 1) { #possibilities: sequence/file/folder
 		if(grepl("\\.txt$", bis.seq) || grepl("\\.fasta$", bis.seq)) { #file
 			if(verbose) { message("[info] Reading from file: ", bis.seq) }
@@ -113,16 +118,16 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 					tmp = paste(tmp, fasta[i], sep="")
 				}
 				bis.seq[bindex] = tmp
-				if(length(sampleName) < 1) { 
-					sampleName = fasta[fa_header]
+				if(length(cloneName) < 1) { 
+					cloneName = fasta[fa_header]
 				}
 			} #read in file as fasta
 		} else if(length(list.files(bis.seq)) > 0) { #folder
 			readlist = list.files(bis.seq)
 			readlist = readlist[grepl("\\.txt$", readlist) | grepl("\\.fasta$", readlist) | grepl("\\.seq$", readlist)]
-			if(length(readlist) < 1) { stop("No .fasta and .txt files found in ", bis.seq) }
-			if(length(sampleName) < 1) {
-				sampleName = unlist(lapply(strsplit(readlist, "\\."), "[", 1)) #split by '.' take 1st element
+			if(length(readlist) < 1) { stop("No .fasta and .txt files found in folder ", bis.seq) }
+			if(length(cloneName) < 1) {
+				cloneName = unlist(lapply(strsplit(readlist, "\\."), "[", 1)) #split by '.' take 1st element
 			}
 			readlist = paste(bis.seq, readlist, sep="/")
 			bindex = 0
@@ -142,58 +147,79 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 				bis.seq[bindex] = tmp
 			} #for each file in folder
 		} #if folder
-	} #if one argument
-	#interactive
-	if(!length(bis.seq)) {
+	} else if(!length(bis.seq)) {	#interactive
 		cat("Paste in sequence, seperate different sequences with newlines, two newlines to end\n") 
 		#press ctrl+z (on windows) or ctrl+d (on unix)
 		bis.seq = scan(what="character")
 		if(length(bis.seq) < 1) { stop("No bisulfite converted sequence entered") }
-	}
-	
+	} else if(verbose) { message("[info] Assume bis.seq contains sequence") }
+		
 	#cleanup: remove all \n, make capital letters (for pattern matching)
 	bis.seq = toupper(gsub("[\n ]","",bis.seq)) #best way may be to remove \s+ w/PERL=TRUE
 	ref.seq = toupper(gsub("[\n ]","",ref.seq))
 	fwd.primer = toupper(gsub("[\n ]","",fwd.primer))
 	rev.primer = toupper(gsub("[\n ]","",rev.primer)) #remember, 5'->3' orientation
 	if(rev.comp) { bis.seq = apply(as.matrix(bis.seq),1,rc)
-		if(verbose) { message("Sequence has been reverse complemented\n") } }
+		if(verbose) { message("[info] Sequence has been reverse complemented") } 
+	}
 	
+	#check: input
+	if(length(ref.seq) != 1) { stop("Please specify reference sequence for ref.seq parameter") }
+	if(length(fwd.primer) > 1 || length(rev.primer) > 1) { stop("Only one set of primers allowed, check primers") }
+	allseq = grepl("[^ACTGN]", (unlist(strsplit(bis.seq, split=""))))
+	if(sum(ss)/length(ss) > 0.1) { stop("Too many non-nucleotide characters found in bisulfite sequence") }
+	rm(allseq)
 	#check: [ACTGN] in bis.seq and ref.seq
-	if(grepl("[^ACTGN]", ref.seq)) { warning("Non-nucleotide character found in reference") }
-	if(all(grepl("[^ACTGN]", bis.seq))) { warning("Non-nucleotide character found in bisulfite sequence ", 
+	if(grepl("[^ACTGN]", ref.seq)) { stop("Non-nucleotide character found in reference") }
+	if(any(grepl("[^ACTGN]", bis.seq))) { warning("Non-nucleotide character found in bisulfite sequence ", 
 		paste(which(grepl("[^ACTGN]", bis.seq)), collapse=" ")) }
 	if(grepl("[^ACTGN]", fwd.primer)) { warning("Non-nucleotide character found in foward primer") }
 	if(grepl("[^ACTGN]", rev.primer)) { warning("Non-nucleotide character found in reverse primer") }
 	
-	#cleanup: strip primers at beginning and end of reference (if any)
+	#check: primers, change NULL primers into "", length is different
+	if(length(fwd.primer) == 0) { fwd.primer = "" } #if NULL set to blank
+	if(length(rev.primer) == 0) { rev.primer = "" } #if NULL set to blank
+	if((fwd.primer == "" || rev.primer == "") && fwd.primer != rev.primer) {
+		message("[ATTN] Only one primer specified, check fwd.primer and rev.primer")
+	}
+	
+	############################################################################
+	## reference processing
+	############################################################################	
+	#check: reference for primer sequence at beginning and end 
 	#supress warning and max() to catch case of blank primers
-	fr = suppressWarnings(pairwiseAlignment(substr(ref.seq,1,max(1,nchar(fwd.primer))), fwd.primer, type="overlap"))
-	rr = suppressWarnings(pairwiseAlignment(substr(ref.seq,nchar(ref.seq)-max(1,nchar(rev.primer)),nchar(ref.seq)), rev.primer, type="overlap"))
+	#artificially convert ref and primer in case primer is bisulfite sensitive
+	#maybe make substr longer
+	fr = suppressWarnings(pairwiseAlignment(substr(gsub("C","T",ref.seq),1,max(1,nchar(fwd.primer))), 
+		gsub("C","T",fwd.primer), type="global"))
+	rr = suppressWarnings(pairwiseAlignment(substr(gsub("C","T",ref.seq),nchar(ref.seq)-
+		max(1,nchar(rev.primer)),nchar(ref.seq)), gsub("C","T",rev.primer), type="global"))
 	
 	#reverse primer match not found, try again
 	if(nmatch(fr) > nchar(fwd.primer)*0.9 & !(nmatch(rr) > nchar(rev.primer)*0.9)) { 
 		if(verbose) { message("[info] Forward primer found in reference but reverse primer not found\n",
 		"-Trying reverse complement of reverse primer") }
-		rr2 = suppressWarnings(pairwiseAlignment(substr(ref.seq,
+		rr2 = suppressWarnings(pairwiseAlignment(substr(gsub("C","T",ref.seq),
 			nchar(ref.seq)-max(1,nchar(rev.primer)),nchar(ref.seq)),
-			rc(rev.primer), type="overlap"))
+			gsub("C","T",rc(rev.primer)), type="global"))
 		if(nmatch(rr2) > nmatch(rr)) { #reverse complement match better
-			if(verbose) { message("[info] Match found using reverse complement of rev.primer") }
+			if(verbose) { message("[info] Better match found using reverse complement of rev.primer") }
+		} else { message("[info] rev.primer still not found") }
+		if(nmatch(rr2) > nchar(rev.primer)*0.9) { #reverse complement matches good enough
 			rev.primer = rc(rev.primer)
 			if(verbose) { message("[ATTN] Reverse complementing reverse primer, please adjust rev.primer next time") }
-		}
-		if(nmatch(rr2) > nchar(rev.primer)*0.9) { rr = rr2
-		} else { warning("Forward primer found in reference but reverse primer not found") }
-	}
+			rr = rr2
+		} else { warning("Forward primer found in reference but reverse primer not found") }		
+	} #fwd found, rev not found
+	#Could only find reverse primer
 	if(!(nmatch(fr) > nchar(fwd.primer)*0.9) & nmatch(rr) > nchar(rev.primer)*0.9)
 	{ warning("Reverse primer found in reference but forward primer not found") }
 	
-	#remove primers in reference
+	#cleanup: remove primers in reference
 	if(nmatch(fr) > nchar(fwd.primer)*0.9 & nmatch(rr) > nchar(rev.primer)*0.9) { 
-		#match again not constrained to beginning/end
-		fr = pairwiseAlignment(ref.seq, fwd.primer, type="overlap")
-		rr = pairwiseAlignment(ref.seq, rev.primer, type="overlap")
+		#realignment not constrained to start/end of ref.seq
+		fr = pairwiseAlignment(ref.seq, fwd.primer, type="local-global")
+		rr = pairwiseAlignment(ref.seq, rev.primer, type="local-global")
 		ref.seq = substr(ref.seq, end(pattern(fr))+1, start(pattern(rr))-1)
 		if(verbose) { message("[info] Primers removed from reference") }
 		
@@ -202,20 +228,28 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		#fr2 = pairwiseAlignment(substr(ref.seq.interest,1,nchar(fwd.primer)), fwd.primer, type="overlap")
 		#rr2 = pairwiseAlignment(substr(ref.seq.interest,nchar(ref.seq)-nchar(rev.primer),nchar(ref.seq)), rev.primer, type="overlap")
 		#could use score but score depends on sequence length
-	} else { if(verbose) { message("[info] Reference sequence used as is") } }
-		
-	#remember: pairwiseAlignment only returns one match
+	} else { if(verbose) { message("[info] Reference sequence used as is (no primers removed)") } }
+	rm(rr, fr)
+	
+	############################################################################
+	## bisulfite sequence processing primers
+	############################################################################	
+	#Extract regions of interest from bis.seq
+	#remember: pairwiseAlignment only returns top match
 	fpsa = suppressWarnings(pairwiseAlignment(bis.seq, fwd.primer, type="local-global")) #patternOverlap works better w/Ns
 	rpsa = suppressWarnings(pairwiseAlignment(bis.seq, rev.primer, type="local-global")) #patternOverlap works better w/Ns
-	if(fwd.primer=="" && rev.primer=="") { 
-		#Currently assume that with no primers, bis.seq is the same as ref.seq
-		#TODO: test case small subsequence (think read in region)
-		#TODO: check if same length
-		#	alignment method might be different if > length vs < length
-		#	at the same time, keep this feature as a 'shortcut' to avoid realignment
-		if(!all(nchar(bis.seq.interest) == nchar(ref.seq))) { stop("Bisulfite sequence not the same length as reference, please specify primers") }
-		bis.seq.interest = bis.seq  #primers already removed
+	if(fwd.primer=="" && rev.primer=="") { #will give score==0 pairwiseAlignment
 		if(verbose) { message("[info] Processing sequence without primers") }
+		if(all(nchar(bis.seq) <= nchar(ref.seq))) { #partial matches only
+			bis.seq.interest = bis.seq  #primers already removed
+		} else { 
+			if(verbose) { message("[ATTN] Found sequence longer than reference, please specify primers next time") }
+			#this will trigger artificial conversion + alignment
+			fpsa@score = rep(-1, length(fpsa))
+			rpsa@score = rep(-1, length(rpsa))
+		} 
+		#TODO: test ^
+		#if(!all(nchar(bis.seq) == nchar(ref.seq))) { stop("Bisulfite sequence not the same length as reference, please specify primers") }
 	} else {
 		bis.seq.interest = substr(bis.seq, end(pattern(fpsa))+1, start(pattern(rpsa))-1)
 	}
@@ -226,7 +260,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		warning("reverse primer found before forward primer, swapping primers")
 		bis.seq.interest = substr(bis.seq, end(pattern(rpsa))+1, start(pattern(fpsa))-1)
 	}
-	if(any(score(fpsa) < 0) | any(score(rpsa) < 0)) {
+	if(fwd.primer != "" && rev.primer != "" && (any(score(fpsa) < 0) || any(score(rpsa) < 0))) {
 		#TODO: selective reverse complement
 		message("[info] Cannot find primers in the following sequences: ", appendLF=FALSE)
 		message(paste(which(score(fpsa) < 0 | score(rpsa) < 0), collapse=" "))
@@ -237,30 +271,42 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		if(all(score(fpsarc) > score(fpsa)) & all(score(fpsarc) > 0)) { message("[info] Forward primer matches clone reverse complement better") }
 		if(all(score(rpsarc) > score(rpsa)) & all(score(rpsarc) > 0)) { message("[info] Reverse primer matches clone reverse complement better") }
 		if(all(score(fpsarc) > score(fpsa)) & all(score(fpsarc) > 0) & 
-			all(score(rpsarc) > score(rpsa)) & all(score(rpsarc) > 0)) {
+			all(score(rpsarc) > score(rpsa)) & all(score(rpsarc) > 0)) { #both better
 			bis.seq.interest = substr(bis.seq.rc, end(pattern(fpsarc))+1, start(pattern(rpsarc))-1)
 			if(verbose) { 
 				message("[info] Using reverse complement of clone since it matches primers better")
-				message("[ATTN] set ", paste("rev.comp", !rev.comp,sep="="), " next time")
+				message("[ATTN] Set ", paste("rev.comp", !rev.comp,sep="="), " next time")
 			}
 			warning(paste("Both forward and reverse primers match reverse complement of clone better"))
 			fpsa = fpsarc
 			rpsa = rpsarc
 		}
 		if(all(score(fpsarc) > score(fpsa)) & all(score(fpsarc) > 0) & 
-			all(score(rpsarc) < score(rpsa)) & all(score(rpsa) > 0)) {
+			all(score(rpsarc) < score(rpsa)) & all(score(rpsa) > 0)) { #fwd better
 			#bis.seq.interest = substr(bis.seq.rc, end(pattern(fpsarc))+1, start(pattern(rpsarc))-1)
-			message("[info] Forward primer matches clone reverse complement better but reverse primer does not")
-		}		
+			rpsarc2 = suppressWarnings(pairwiseAlignment(bis.seq.rc, rc(rev.primer), type="local-global"))
+			if(all(score(rpsarc2) > 0)) { 
+				if(verbose) {
+					message("[info] Using reverse complement of clone with reverse complement of reverse primer")
+					message("[ATTN] Set ", paste("rev.comp", !rev.comp,sep="="), " next time")
+					message("[ATTN] Change reverse primer into 5'->3' orientation (reverse complement) next time")
+				}
+				rev.primer = rc(rev.primer)
+				bis.seq.interest = substr(bis.seq.rc, end(pattern(fpsarc))+1, start(pattern(rpsarc2))-1)
+				fpsa = fpsarc
+				rpsa = rpsarc2
+			} else { message("[info] Forward primer matches clone reverse complement better but reverse primer does not") }
+		}
 		if(all(score(fpsarc) < score(fpsa)) & all(score(fpsa) > 0) & 
-			all(score(rpsarc) > score(rpsa)) & all(score(rpsarc) > 0)) {
+			all(score(rpsarc) > score(rpsa)) & all(score(rpsarc) > 0)) { #rev better
 			#bis.seq.interest = substr(bis.seq.rc, end(pattern(fpsarc))+1, start(pattern(rpsarc))-1)
 			message("[info] Reverse primer matches clone reverse complement better but forward primer does not\n")
 		}
-	}
+	} #if primer not found, try to switch primer around
 	
+	#primer still not found, ignore primer and 
 	#fallback with artificial conversion and alignment
-	if(any(score(fpsa) < 0 | score(rpsa) < 0)) {
+	if(any(score(fpsa) < 0 || score(rpsa) < 0)) {
 		if(verbose) { message("[info] Cannot find sequence in clones using primers\n-falling back to artificial conversion") }
 		refsa = suppressWarnings(pairwiseAlignment(gsub("C","T",bis.seq), gsub("C","T",ref.seq), type="local-global"))
 		refsarc = suppressWarnings(pairwiseAlignment(gsub("C","T",apply(as.matrix(bis.seq),1,rc)), gsub("C","T",ref.seq), type="local-global"))
@@ -275,35 +321,43 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 				#cat("-set "); cat(paste("rev.comp", !rev.comp,sep="=")); cat(" next time\n") 				
 			}
 			warning(paste("Both forward and reverse primers match reverse complement of clone better"))
-		} else { stop("No good matches found in sample, please check primers and reference sequence") }
+		} else { stop("No good matches found in bis.seq, please check primers and reference sequence") }
 	}
 	
 	if(verbose) { message("[info] ", paste(length(bis.seq.interest), "clones processed with average length of", 
 		round(mean(nchar(bis.seq.interest)),2), collapse=" ")) }
 		
-	#sample names and sample order
-	if(length(sampleName) < 1) { sampleName = 1:length(bis.seq.interest) }
-	if(length(sampleName) != length(bis.seq.interest)) { 
+	#Assign sample names and sample order
+	if(length(cloneName) < 1) { cloneName = 1:length(bis.seq.interest) }
+	if(length(cloneName) != length(bis.seq.interest)) { 
 		message("[ATTN] invalid number of sample names, using numbers instead"); 
-		sampleName = 1:length(bis.seq.interest)
+		cloneName = 1:length(bis.seq.interest)
 	}
-	if(length(sampleOrder) == length(bis.seq.interest) && all(1:length(bis.seq.interest) %in% sampleOrder) ) {
-		bis.seq.interest = bis.seq.interest[sampleOrder]
-		sampleName = sampleName[sampleOrder]
+	if(length(cloneOrder) == length(bis.seq.interest) && all(1:length(bis.seq.interest) %in% cloneOrder) ) {
+		bis.seq.interest = bis.seq.interest[cloneOrder]
+		cloneName = cloneName[cloneOrder]
 		if(verbose) { message("[info] Reordering rows") }
-	} else if(length(sampleOrder) > 0) { message("[ATTN] sampleOrder ignored due to incorrect specification") }
+	} else if(length(cloneOrder) > 0) { message("[ATTN] cloneOrder ignored due to incorrect input") }
 	
+	############################################################################
+	## bisulfite sequence alignment and mC site identification
+	############################################################################	
 	#Align bisulfite sequence to reference
 	#type="global" has end gap penalty see Biostrings manual for more details
 	#pwa = pairwiseAlignment(bis.seq.interest, ref.seq, type="overlap") #used for mismatchSummary
-	pwa = pairwiseAlignment(bis.seq.interest, gsub("C","T",ref.seq), type="global")
+	if(all(nchar(bis.seq.interest) < nchar(ref.seq) * 0.9)) {
+		#note the switch in match type here, bis.seq.interest is expected to be shorter
+		pwa = pairwiseAlignment(bis.seq.interest, gsub("C","T",ref.seq), type="global-local")
+	} else {
+		pwa = pairwiseAlignment(bis.seq.interest, gsub("C","T",ref.seq), type="global")
+	}
 	badpwa = score(pwa) <= 0
 	if(all(badpwa)) { stop("No good matches found in sample, please check primers and reference") }
 	
 	if(any(badpwa)) {  #look at reverse complement of low scoring alignments
 		pwarc = pairwiseAlignment(apply(as.matrix(bis.seq.interest[badpwa]),1,rc), gsub("C","T",ref.seq), type="global") 
 		for(i in which(badpwa)[score(pwarc) > score(pwa)[badpwa]]) { 
-			message("[info] Clone ", sampleName[i], " replaced with reverse complement") 
+			message("[info] Clone ", cloneName[i], " replaced with reverse complement") 
 		}
 		#pwa[badpwa][score(pwarc) > score(pwa)[badpwa]] = pwarc[score(pwarc) > score(pwa)[badpwa]] #not allowed
 		bis.seq.interest[badpwa][score(pwarc) > score(pwa)[badpwa]] = 
@@ -375,17 +429,21 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		#check for incomplete conversion
 		convertedC = as.matrix(pwa[i])[,csite] == "T"
 		unconvertedC = as.matrix(pwa[i])[,csite] == "C"
-		if(sum(unconvertedC)/max(sum(convertedC)+sum(unconvertedC),1) > 0.9) { 
+		if(sum(unconvertedC)/max(sum(convertedC)+sum(unconvertedC),1) > 0.9) { #90%+ unconverted
 			score(pwa)[i] = 0
-			message("Clone ", sampleName[i], " will be skipped due to incomplete bisulfite conversion")
-		} else if (sum(unconvertedC) > round(length(csite)/10)) { 
-			message("[ATTN] Clone ", sampleName[i], " has ", sum(unconvertedC), "/", 
-			sum(convertedC)+sum(unconvertedC), " unconverted Cs, check bisulfite conversion") } 
+			message("[ATTN] Clone ", cloneName[i], " will be skipped due to incomplete bisulfite conversion")
+		} else if (sum(unconvertedC) > round(length(csite)/10)) { #10%+ unconverted
+			message("[ATTN] Clone ", cloneName[i], " has ", sum(unconvertedC), "/", 
+			sum(convertedC)+sum(unconvertedC), " unconverted Cs, check bisulfite conversion") 
+		} else if (showNumUnconverted && sum(unconvertedC)) { #any unconverted
+			message("[ATTN] Clone ", cloneName[i], " has ", sum(unconvertedC), "/", 
+			sum(convertedC)+sum(unconvertedC), " unconverted Cs, check bisulfite conversion") 		
+		}
 
 		#check: if current sample failed in matching
 		#if(i %in% difflength) { next; } #length must match (very conservative)
 		if(nchar(bis.seq.interest[i]) == 0 || score(pwa)[i] <= 0) {  #primer sequence not found
-			message("[ATTN] Clone ", sampleName[i], " skipped due to low quality match"); next; 
+			message("[ATTN] Clone ", cloneName[i], " skipped due to low quality match"); next; 
 		} 		
 		
 		#mms = mismatchSummary(pwa[i])$subject #this is what holds the interesting data
@@ -398,14 +456,14 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		metotal = metotal+sum(mestat)+sum(umestat)
 		
 		#catch non T/C csites and cgsites (1+)
-		if(verbose && length(cgsite) - (sum(umestat)+sum(mestat)) > 1) {
+		if(showNumUnconverted && length(cgsite) - (sum(umestat)+sum(mestat)) > 0) {
 			message("[info] Sequencing / alignment errors: ", 
-				length(cgsite)-sum(umestat)-sum(mestat), " non T/C found at CpGs in ", sampleName[i], appendLF=FALSE)
+				length(cgsite)-sum(umestat)-sum(mestat), " non T/C found at CpGs in ", cloneName[i], appendLF=FALSE)
 			print(table(as.matrix(pwa[i])[,csite])) #DEBUG 
 		}
-		if(verbose && length(csite) - (sum(unconvertedC)+sum(convertedC)) > 1) {
+		if(showNumUnconverted && length(csite) - (sum(unconvertedC)+sum(convertedC)) > 0) {
 			message("[info] Sequencing / alignment errors: ", 
-				length(csite)-sum(unconvertedC)-sum(convertedC), " non T/C found at Cs in ", sampleName[i], appendLF=FALSE)
+				length(csite)-sum(unconvertedC)-sum(convertedC), " non T/C found at Cs in ", cloneName[i], appendLF=FALSE)
 			print(table(as.matrix(pwa[i])[,csite])) #DEBUG
 		}
 		
@@ -416,9 +474,9 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 			nosum[i] = sum(nostat)
 			nototal = nototal+sum(nostat)+sum(unostat)
 			
-			if(verbose && length(gcsite) - (sum(unostat)+sum(nostat)) > 1) {
+			if(showNumUnconverted && length(gcsite) - (sum(unostat)+sum(nostat)) > 0) {
 				message("[info] Sequencing / alignment errors: ", 
-					length(gcsite)-sum(nostat)-sum(unostat), " non T/C found at GpCs in ", sampleName[i], appendLF=FALSE)
+					length(gcsite)-sum(nostat)-sum(unostat), " non T/C found at GpCs in ", cloneName[i], appendLF=FALSE)
 				print(table(as.matrix(pwa[i])[,csite])) #DEBUG 		
 			}
 		} 
@@ -430,7 +488,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 			drawmeCircles(c(mepos[umestat],mepos[mestat]),ypos[i+spacer], cex = size, 
 				colormatrix=c(rep(col.um, length(mepos[umestat])),rep(col.me,length(mepos[mestat]))))
 		}
-	}
+	} #for each alignment
 	
 	if(NOME == 2) { 
 		if(verbose) { message("[plot] Plotting GpCs sites under CpGs sites") }
@@ -461,16 +519,15 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		xaxis.val = seq(0,nchar(ref.seq),by=50)[xaxis.loc < 0.97] #remove too close
 		xaxis.loc = xaxis.loc[xaxis.loc < 0.97] #remove too close
 		#prettylucky = xaxis.val %in% pretty(xaxis.val, n=10)
-		#can also use mtext()
-		axis(1, at = c(xaxis.loc, 1), labels = c(xaxis.val, nchar(ref.seq))) 
+		axis(1, at = c(xaxis.loc, 1), labels = c(xaxis.val, nchar(ref.seq))) #can also use mtext()
 
-		yaxis.val = sampleName
+		yaxis.val = cloneName
 		#yaxis.loc = NULL
 		if(reference) {
 			yaxis.val = c("ref", "", yaxis.val)
 			
 		} 
-		if(NOME == 2) { yaxis.val = c(yaxis.val, "", sampleName) }
+		if(NOME == 2) { yaxis.val = c(yaxis.val, "", cloneName) }
 		#yaxis.loc = seq(1,0,length.out=length(yaxis.val))*scaling
 		#TODO: dynamic scaling of cex based on nchar of yaxis.val
 		axis(2, at=ypos, labels=yaxis.val, cex.axis=0.8, las=2) 
@@ -500,8 +557,8 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 # bis.seq = c("GTGAGTTATTACGGGA", "GTGATGTTATTATGGGA", "GTGATGTTATTAGGGA", "GTGATGTTATTAGGGGA", "GTGACGTTATTACGGGAC", "GTGACGTTTATTACGGGA")
 # methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer, scaling=1, reference=TRUE, col.um="white", col.me= "black", col.gme="#00FA9A", col.gum ="white")
 # pwa = pairwiseAlignment(bis.seq, ref.seq, type="overlap")
-## see biostring reference for complete set of functions
-# REF:	GCGACGTTATTACG
+## see biostring manual for complete set of functions
+#REFERENCE:	GCGACGTTATTACGGGA
 # CLONE1:	GTGA GTTATTACGGGA	(missing first CG)
 # CLONE2:	GTGATGTTATTATGGGA	(everything is unme)
 # CLONE3:	GTGATGTTATTA GGGA	(missing last CG)

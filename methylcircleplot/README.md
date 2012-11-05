@@ -138,9 +138,11 @@ col.gum -- default = "aliceblue", color of unmethylated GpC
 
 verbose -- default = TRUE, Display diagnostic messages
 
-sampleName -- default = NULL, Specify sample names (Y-axis labels)
+showNumUnconverted -- default = FALSE, Show number of unconverted Cs
 
-sampleOrder -- default = NULL, Specify the order in which to rearrange the rows (clones)
+cloneName -- default = NULL, Specify clone names (Y-axis labels)
+
+cloneOrder -- default = NULL, Specify the order in which to rearrange the rows (clones)
 
 getAln -- default = FALSE, Return alignment between reference and samples (PairwiseAlignedFixedSubject object, see Biostrings for more details)
 
