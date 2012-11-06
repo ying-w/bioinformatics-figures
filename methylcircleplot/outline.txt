@@ -1,0 +1,63 @@
+I/O
+One element:
+Read from file
+-nonexsist -> stop
+-empty -> interactive then stop
+Read from folder
+-non-exist -> stop
+-empty -> interactive then stop
+No elements:
+Read from console (interactive)
+-empty -> stop
+Else:
+Read from R input (vector)
+
+Input handling (uppercase and remove spaces/newlines)
+ref.seq
+-vector length != 1 -> stop
+-non-ACTGN -> warning
+primer (fwd/rev)
+-vector length != 1 -> stop
+-non-ACTGN -> warning
+bis.seq
+-non-ACTGN -> stop if 10%+ else warning
+primers
+-NULL -> change to ""
+-only one is "" -> message
+
+Primers in reference
+fwd found only
+-match start of reference 90%+ -> search for reverse compelement of reverse primer -> warning
+rev found only
+-match end of reference 90%+ -> warning
+both found
+-match extremes of reference 90%+ -> realign vs full and remove primers
+else
+-use "as is"
+
+Primers in bisulfite sequence
+no primers
+-shorter -> use as is
+-longer -> set score to -1 (will be realigned at a later step)
+primer swap
+-scoreS > 0, rev location > fwd location -> swap primers
+reverse complement (score < 0 and not blank primers)
+-rc(bis.seq)
+--both primers match rc -> reassign alignments
+--fwd match rc, rev match -> score > 0 -> reassign alignments
+conversion and alignment (score < 0)
+-align bis.seq vs ref.seq -> accept if ALL score > 0
+-align rc(bis.seq) vs ref.seq -> accept if ALL score > 0
+
+mC/CG/GC identification
+-all low scoring alignments, check reverse complement
+-calculate difference in length between bisulfite sequence of interest and reference
+-Identify in reference:
+--C sites for incomplete bisulfite conversion
+--CGs for methylation analysis
+--GCs if NOME is enabled (1 or 2)
+
+Plotting
+-Draw one line at a time using drawmeCircles(), all rows positions are in ypos
+-Calculate bisulfite conversion efficiency and identify methylation state for each site and clone
+-Draw thin grey line before actual plot, grey line is showed for skipped clones

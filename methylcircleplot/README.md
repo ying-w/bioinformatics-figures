@@ -11,7 +11,7 @@ Prerequisites
   If you are new to R, I would suggest also installing [R-studio](http://www.rstudio.com/)
 * [Bioconductor](http://bioconductor.org/install/) must be installed
 * [Biostrings](http://bioconductor.org/packages/release/bioc/html/Biostrings.html) package in bioconductor
-* [Script file](https://raw.github.com/ying-w/bioinformatics-figures/master/methylcircleplot/methylcircleplot.R) Needs to be saved in the current working directory
+* [Script file](https://raw.github.com/ying-w/bioinformatics-figures/master/methylcircleplot/methylcircleplot.R) needs to be saved in the current working directory
 
 **Sequence:**
 
@@ -65,12 +65,12 @@ bis.seq = "clone.fasta" #multi-fasta example file above
 #specify primers
 fwd.primer = "tgggctgaaatactgggttcaccc"
 rev.primer = "atggctggacacctggcttcag"
-#specify image name + size
+#specify figure name + size
 png("myclones.png", width=550, height=400)
-#generate image
-methylcircleplot(ref.seq, bis.seq, fwd.primer, 
-  rev.primer, reference=TRUE, NOME=2, col.gme = "lightgrey", col.gum = "white")
-#save image
+#generate NOME-seq figure with reference and GC(NOME) status colors changed
+methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer, 
+	reference=TRUE, NOME=2, col.gme = "lightgrey", col.gum = "white")
+#save figure
 dev.off()
 ~~~~
 
@@ -79,7 +79,9 @@ start up an R (or Rstudio) session and load the script using
 
 	source("methylcircleplot.R") 
 
-If the command does not work, make sure the R session is in the same folder as the location of the file you downloaded (use `getwd()` to check and `setwd()` to change)
+If the command does not work, make sure the R working directory is in the same folder as the location of the file you downloaded 
+(use `getwd()` to check and `setwd()` to change). R starts in a default working directory and that is where
+it looks automatically for files such as methylcircleplot.R and the file you specify for bis.seq
 
 Next, specify the reference sequence and file/folder with bisulfite sequence. Remember to surround them with quotes.
 
@@ -99,6 +101,7 @@ To generate the figure run the following command (notice some options specified 
 
 	methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer, reference=TRUE, NOME=2)
 	
+Keep in mind that `reference=TRUE` and `NOME=2` are optional parameters (full list below).
 After you have created a suitable figure you can save it in PNG format by using the following command:
 	
 	png(filename="clone.png", width = 600, height = 600, units = "px")
@@ -115,36 +118,38 @@ Optional parameters
 While reference (`ref.seq`) and bisulfite sequence (`bis.seq`) are required, there are other parameters that can be set.
 
 Some examples of what the parameters look like can be found [here](http://codingenes.wordpress.com/2012/08/23/script-methylation-figure-generation/#more-57)
+Parameters and defaults listed below:
 
-rev.comp -- default = FALSE, reverse complements bisulfate sequence
+`rev.comp = FALSE` reverse complements bisulfate sequence
 
-size -- default = 2, size of circles
+`size = 2` size of circles
 
-scaling -- default = 1, distance between circles, accepts value between 0 and 1 with < 1 moving the bubbles closer together
+`scaling = 1` distance between circles, accepts value between 0 and 1 with < 1 moving the bubbles closer together
 
-reference -- default = FALSE, show reference sequence at top
+`reference = FALSE` show reference sequence at top
 
-NOME -- default = 0, GpC detection: 0 - disabled (default) | 1 - plot together | 2 - plot GpC below CpG
+`NOME = 0` GpC detection: 0 - disabled (default) | 1 - plot together | 2 - plot GpC below CpG
 
-noaxis -- default = FALSE, Turn off x/y-axis and labels
+`noaxis = FALSE` Turn off x/y-axis and labels (used to generated simplier figures)
 
-col.um -- default = "white", color of unmethylated CpG
+`col.um = "white"` color of unmethylated CpG
 
-col.me -- default = "black", color of methylated CpG
+`col.me = "black"` color of methylated CpG
 
-col.gme -- default = "lightgreen", color of methylated GpC
+`col.gme = "lightgreen"` color of methylated GpC
 
-col.gum -- default = "aliceblue", color of unmethylated GpC
+`col.gum = "aliceblue"` color of unmethylated GpC
 
-verbose -- default = TRUE, Display diagnostic messages
+`verbose = TRUE` Display diagnostic messages
 
-showNumUnconverted -- default = FALSE, Show number of unconverted Cs
+`showNumUnconverted = FALSE` Show number of unconverted Cs
 
-cloneName -- default = NULL, Specify clone names (Y-axis labels)
+`cloneName = NULL` Specify clone names (Y-axis labels)
 
-cloneOrder -- default = NULL, Specify the order in which to rearrange the rows (clones)
+`cloneOrder = NULL` Specify the order in which to rearrange the rows (clones)
 
-getAln -- default = FALSE, Return alignment between reference and samples (PairwiseAlignedFixedSubject object, see Biostrings for more details)
+`getAln = FALSE` Return alignment between reference and samples 
+(PairwiseAlignedFixedSubject object, see [Biostrings manual](http://bioconductor.org/packages/release/bioc/html/Biostrings.html) for more details)
 
 Additional Notes
 ----------------
@@ -153,13 +158,16 @@ It is possible to specify how much distance should be between the rows but this 
 If figure dimensions is increased (see png() command), you will need to adjust size and scaling values to keep the look the same
 I have yet to find a way to 'autoscale' size and spacing to account for changes in figure size/resolution.
 
-By having a `png()` command before and a `dev.off()` command after, R will save the last plot generated before `dev.off()` in the .png file specified.
-It is also possible to export `pdf()` and `tiff()` by replacing `png()`. `pdf()` and `svg()` require width and height to be specified in inches such as `svg("clone.svg", width=5.5, height=4)` (default is 7x7)
-Occasionally you may encounter some odd banding patterns while using `png()` to export. 
+By having a `png()` command before `methycircleplot()` and `dev.off()` command after, R will save the plot generated a specified .png file.
+It is also possible to export pdfs and tiffs by replacing `png()` with `pdf()` or `tiff()` 
+As a sidenote, `pdf()` and `svg()` require width and height to be specified in inches (instead of pixels)
+ such as `svg("clone.svg", width=5.5, height=4)` (default is 7x7)
+
+Occasionally you may encounter some odd banding patterns when using `png()` to export. 
 To work around this, I typically export with `pdf()` and use the linux `convert` utility to change the file from .pdf to .png. 
 Another workaround would be to export using `svg()` and then convert to png (using Inkscape). 
-I have found that svg files produced by R sometimes have font incompatibility issues with Adobe Illustrator, to 
-work around this and keep everything vectorized I first open the .svg file using Inkscape, then export a .emf file for Illustrator to open.
+I have found that svg files produced by R sometimes have font incompatibility issues with Adobe Illustrator, so to 
+work around this and keep everything vectorized, I first open the .svg file using Inkscape, then export a .emf file for Illustrator to open.
 
 List of colors in R can be found [here](http://research.stowers-institute.org/efg/R/Color/Chart/)
 

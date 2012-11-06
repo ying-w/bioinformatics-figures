@@ -114,7 +114,8 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 				bindex = 0
 				tmp=NULL;
 				for(i in 1:length(fasta)) {
-					if(fa_header[i]) { bis.seq[bindex]=tmp; bindex=bindex+1; tmp=NULL; next;} #initial 0 is thrown away
+					if(fa_header[i]) { bis.seq[bindex]=tmp; bindex=bindex+1; tmp=NULL; next;} 
+					#^ initial 0 is thrown away
 					tmp = paste(tmp, fasta[i], sep="")
 				}
 				bis.seq[bindex] = tmp
@@ -236,8 +237,9 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	############################################################################	
 	#Extract regions of interest from bis.seq
 	#remember: pairwiseAlignment only returns top match
-	fpsa = suppressWarnings(pairwiseAlignment(bis.seq, fwd.primer, type="local-global")) #patternOverlap works better w/Ns
-	rpsa = suppressWarnings(pairwiseAlignment(bis.seq, rev.primer, type="local-global")) #patternOverlap works better w/Ns
+	#local-global works better w/Ns
+	fpsa = suppressWarnings(pairwiseAlignment(bis.seq, fwd.primer, type="local-global"))
+	rpsa = suppressWarnings(pairwiseAlignment(bis.seq, rev.primer, type="local-global"))
 	if(fwd.primer=="" && rev.primer=="") { #will give score==0 pairwiseAlignment
 		if(verbose) { message("[info] Processing sequence without primers") }
 		if(all(nchar(bis.seq) <= nchar(ref.seq))) { #partial matches only
@@ -262,16 +264,19 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	}
 	if(fwd.primer != "" && rev.primer != "" && (any(score(fpsa) < 0) || any(score(rpsa) < 0))) {
 		#TODO: selective reverse complement
-		message("[info] Cannot find primers in the following sequences: ", appendLF=FALSE)
+		message("[info] Cannot find primers in the following clones: ", appendLF=FALSE)
 		message(paste(which(score(fpsa) < 0 | score(rpsa) < 0), collapse=" "))
 		message("-Trying reverse complement of ALL bisulfite sequences")
 		bis.seq.rc = apply(as.matrix(bis.seq),1,rc)
-		fpsarc = suppressWarnings(pairwiseAlignment(bis.seq.rc, fwd.primer, type="local-global")) #patternOverlap works better w/Ns
-		rpsarc = suppressWarnings(pairwiseAlignment(bis.seq.rc, rev.primer, type="local-global")) #patternOverlap works better w/Ns
-		if(all(score(fpsarc) > score(fpsa)) & all(score(fpsarc) > 0)) { message("[info] Forward primer matches clone reverse complement better") }
-		if(all(score(rpsarc) > score(rpsa)) & all(score(rpsarc) > 0)) { message("[info] Reverse primer matches clone reverse complement better") }
-		if(all(score(fpsarc) > score(fpsa)) & all(score(fpsarc) > 0) & 
-			all(score(rpsarc) > score(rpsa)) & all(score(rpsarc) > 0)) { #both better
+		#repeat above
+		fpsarc = suppressWarnings(pairwiseAlignment(bis.seq.rc, fwd.primer, type="local-global")) 
+		rpsarc = suppressWarnings(pairwiseAlignment(bis.seq.rc, rev.primer, type="local-global")) 
+		if(all(score(fpsarc) > score(fpsa)) && all(score(fpsarc) > 0) && verbose) { 
+			message("[info] Forward primer matches clone reverse complement better") }
+		if(all(score(rpsarc) > score(rpsa)) && all(score(rpsarc) > 0 && verbose)) { 
+			message("[info] Reverse primer matches clone reverse complement better") }
+		if(all(score(fpsarc) > score(fpsa)) && all(score(fpsarc) > 0) && 
+			all(score(rpsarc) > score(rpsa)) && all(score(rpsarc) > 0)) { #both better
 			bis.seq.interest = substr(bis.seq.rc, end(pattern(fpsarc))+1, start(pattern(rpsarc))-1)
 			if(verbose) { 
 				message("[info] Using reverse complement of clone since it matches primers better")
@@ -300,16 +305,19 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		if(all(score(fpsarc) < score(fpsa)) & all(score(fpsa) > 0) & 
 			all(score(rpsarc) > score(rpsa)) & all(score(rpsarc) > 0)) { #rev better
 			#bis.seq.interest = substr(bis.seq.rc, end(pattern(fpsarc))+1, start(pattern(rpsarc))-1)
-			message("[info] Reverse primer matches clone reverse complement better but forward primer does not\n")
+			message("[info] Reverse primer matches clone reverse complement better but forward primer does not")
 		}
 	} #if primer not found, try to switch primer around
 	
 	#primer still not found, ignore primer and 
 	#fallback with artificial conversion and alignment
+	#TODO: selective artificial conversion
 	if(any(score(fpsa) < 0 || score(rpsa) < 0)) {
 		if(verbose) { message("[info] Cannot find sequence in clones using primers\n-falling back to artificial conversion") }
-		refsa = suppressWarnings(pairwiseAlignment(gsub("C","T",bis.seq), gsub("C","T",ref.seq), type="local-global"))
-		refsarc = suppressWarnings(pairwiseAlignment(gsub("C","T",apply(as.matrix(bis.seq),1,rc)), gsub("C","T",ref.seq), type="local-global"))
+		refsa = suppressWarnings(pairwiseAlignment(gsub("C","T",bis.seq), 
+			gsub("C","T",ref.seq), type="local-global"))
+		refsarc = suppressWarnings(pairwiseAlignment(gsub("C","T",apply(as.matrix(bis.seq),1,rc)), 
+			gsub("C","T",ref.seq), type="local-global"))
 		if(mean(score(refsa)) > mean(score(refsarc)) & all(score(refsa) > 0)) { #fallback with refsa
 			bis.seq.interest = substr(bis.seq, start(pattern(refsa)), end(pattern(refsa)))
 			if(verbose) { message("[info] Aligning clone sequence with reference") }
@@ -352,10 +360,10 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		pwa = pairwiseAlignment(bis.seq.interest, gsub("C","T",ref.seq), type="global")
 	}
 	badpwa = score(pwa) <= 0
-	if(all(badpwa)) { stop("No good matches found in sample, please check primers and reference") }
 	
 	if(any(badpwa)) {  #look at reverse complement of low scoring alignments
-		pwarc = pairwiseAlignment(apply(as.matrix(bis.seq.interest[badpwa]),1,rc), gsub("C","T",ref.seq), type="global") 
+		pwarc = pairwiseAlignment(apply(as.matrix(bis.seq.interest[badpwa]),1,rc), 
+			gsub("C","T",ref.seq), type="global") 
 		for(i in which(badpwa)[score(pwarc) > score(pwa)[badpwa]]) { 
 			message("[info] Clone ", cloneName[i], " replaced with reverse complement") 
 		}
@@ -365,14 +373,16 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 		pwa = pairwiseAlignment(bis.seq.interest, gsub("C","T",ref.seq), type="global")
 	}
 
+	if(all(score(pwa) <= 0)) { stop("No good matches found in sample, please check primers and reference") }
+
 	#check lengths
 	difflength = nchar(bis.seq.interest) - nchar(ref.seq)
 	if(length(which(difflength != 0))) { 
 		warning(paste("Sequence length difference (clone-ref) detected in the following samples(diff): \n", 
 		paste(paste(which(difflength !=0), difflength[which(difflength !=0)], sep="("), collapse=") "), ")", sep=""))
-	} #difflength used later for plotting (not anymore!)
-	#use as.matrix(pairwiseAlignment(gsub("C","T",bis.seq.interest), gsub("C","T",ref.seq), type="local-global"))
-	#and look for '-' to find which column is skipped over
+	} #difflength can be used later for plotting
+	#To visualize pwa and look for indels use below command and look at columns
+	#as.matrix(pairwiseAlignment(gsub("C","T",bis.seq.interest), gsub("C","T",ref.seq), type="local-global"))
 		
 	#identify CpGs/GpCs in reference
 	gcpos = "" #length("") is 1, length(NULL) is 0. Useful since plot(x,y) requires length(x) == length(y)
@@ -407,7 +417,8 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	if(NOME == 2) { ylength = ylength*2 + 1 }
 	if(reference) { 
 		spacer = 2
-		drawmeCircles(c(mepos,gcpos),1, cex = size, colormatrix=c(rep(col.um, length(mepos)),rep(col.gum,length(gcpos))))
+		drawmeCircles(c(mepos,gcpos),1, cex = size, 
+			colormatrix=c(rep(col.um, length(mepos)),rep(col.gum,length(gcpos))))
 	} 
 	ypos = 1-seq(0,1, length.out=(ylength+spacer))*scaling
 	if(!is.na(ypos[2]) && ypos[1]-ypos[2] < 0.005) { 
@@ -421,8 +432,8 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	metotal = 0
 	nosum = rep(0,length(pwa))
 	nototal = 0
-	for(i in 1:length(pwa))
-	{ #plot from top to bottom
+	for(i in 1:length(pwa)) { #for every clone
+		#plot from top to bottom
 		#curheight = ypos[i+spacer]
 		abline(h=ypos[i+spacer], lty=3, col="grey10") #only see this line if sample failed
 		
@@ -446,25 +457,31 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 			message("[ATTN] Clone ", cloneName[i], " skipped due to low quality match"); next; 
 		} 		
 		
+		#naiive approach
 		#mms = mismatchSummary(pwa[i])$subject #this is what holds the interesting data
-		#mms = mms[mms$Subject == "C" & mms$Pattern == "T",] #should also check for C-N, currently assume everything else methylated
+		#mms = mms[mms$Subject == "C" & mms$Pattern == "T",] 
+		#should also check for C-N, currently assume everything else methylated
 		#mestat = cgsite %in% mms$SubjectPosition #methylation status of CpG sites
-		#above code does not take into account seq errors / indels
+		#above code does not take into account seq errors / indels or C-N
+		
+		#new approach
 		umestat = as.matrix(pwa[i])[,cgsite] == "T"
 		mestat = as.matrix(pwa[i])[,cgsite] == "C"
 		mesum[i] = sum(mestat)
 		metotal = metotal+sum(mestat)+sum(umestat)
 		
-		#catch non T/C csites and cgsites (1+)
+		#catch non T/C csites and cgsites
 		if(showNumUnconverted && length(cgsite) - (sum(umestat)+sum(mestat)) > 0) {
 			message("[info] Sequencing / alignment errors: ", 
-				length(cgsite)-sum(umestat)-sum(mestat), " non T/C found at CpGs in ", cloneName[i], appendLF=FALSE)
-			print(table(as.matrix(pwa[i])[,csite])) #DEBUG 
+				length(cgsite)-sum(umestat)-sum(mestat), " non T/C found at CpGs in ", 
+				cloneName[i], appendLF=FALSE)
+			print(table(as.matrix(pwa[i])[,csite])) 
 		}
 		if(showNumUnconverted && length(csite) - (sum(unconvertedC)+sum(convertedC)) > 0) {
 			message("[info] Sequencing / alignment errors: ", 
-				length(csite)-sum(unconvertedC)-sum(convertedC), " non T/C found at Cs in ", cloneName[i], appendLF=FALSE)
-			print(table(as.matrix(pwa[i])[,csite])) #DEBUG
+				length(csite)-sum(unconvertedC)-sum(convertedC), " non T/C found at Cs in ", 
+				cloneName[i], appendLF=FALSE)
+			print(table(as.matrix(pwa[i])[,csite]))
 		}
 		
 		if(NOME) {
@@ -476,10 +493,11 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 			
 			if(showNumUnconverted && length(gcsite) - (sum(unostat)+sum(nostat)) > 0) {
 				message("[info] Sequencing / alignment errors: ", 
-					length(gcsite)-sum(nostat)-sum(unostat), " non T/C found at GpCs in ", cloneName[i], appendLF=FALSE)
+					length(gcsite)-sum(nostat)-sum(unostat), " non T/C found at GpCs in ", 
+					cloneName[i], appendLF=FALSE)
 				print(table(as.matrix(pwa[i])[,csite])) #DEBUG 		
 			}
-		} 
+		} #if NOME 
 		if(NOME == 1) {
 			drawmeCircles(c(mepos[umestat],mepos[mestat],gcpos[unostat],gcpos[nostat]),ypos[i+spacer], cex = size, 
 				colormatrix=c(rep(col.um,length(mepos[umestat])), rep(col.me,length(mepos[mestat])),
@@ -493,7 +511,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	if(NOME == 2) { 
 		if(verbose) { message("[plot] Plotting GpCs sites under CpGs sites") }
 		for(i in 1:length(pwa))
-		{ #plot from top to bottom
+		{ #plot from top to bottom, mostly the same code as above
 			curheight = ypos[length(pwa)+i+spacer+1] #THIS LINE IS DIFFERENT
 			abline(h=curheight, lty=3, col="grey10") #only see this line if sample failed
 			
@@ -502,9 +520,6 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 				next; 
 			} 
 			
-			#mms = mismatchSummary(pwa[i])$subject #this is what holds the interesting data
-			#mms = mms[mms$Subject == "C" & mms$Pattern == "T",] #should also check for C-N
-			#nostat = gcsite %in% mms$SubjectPosition #methylation status of CpG sites
 			unostat = as.matrix(pwa[i])[,gcsite] == "T"
 			nostat = as.matrix(pwa[i])[,gcsite] == "C"
 			
