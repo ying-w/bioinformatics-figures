@@ -168,7 +168,7 @@ methylcircleplot = function(ref.seq, bis.seq = NULL, fwd.primer = "", rev.primer
 	if(length(ref.seq) != 1) { stop("Please specify reference sequence for ref.seq parameter") }
 	if(length(fwd.primer) > 1 || length(rev.primer) > 1) { stop("Only one set of primers allowed, check primers") }
 	allseq = grepl("[^ACTGN]", (unlist(strsplit(bis.seq, split=""))))
-	if(sum(ss)/length(ss) > 0.1) { stop("Too many non-nucleotide characters found in bisulfite sequence") }
+	if(sum(allseq)/length(allseq) > 0.1) { stop("Too many non-nucleotide characters found in bisulfite sequence") }
 	rm(allseq)
 	#check: [ACTGN] in bis.seq and ref.seq
 	if(grepl("[^ACTGN]", ref.seq)) { stop("Non-nucleotide character found in reference") }
