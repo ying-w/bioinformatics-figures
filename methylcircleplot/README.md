@@ -171,3 +171,6 @@ work around this and keep everything vectorized, I first open the .svg file usin
 
 List of colors in R can be found [here](http://research.stowers-institute.org/efg/R/Color/Chart/)
 
+RCurl can be used to keep the script up to date:
+* http://tonybreyal.wordpress.com/2011/11/24/source_https-sourcing-an-r-script-from-github/
+* http://stackoverflow.com/questions/7715723/sourcing-r-script-over-https

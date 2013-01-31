@@ -4,13 +4,13 @@
 #License: ___ for private use only
 #Version: TESTING
 
-peak2GRanges = function(bedfile, type="macs")
+peak2GRanges = function(bedfile, type="macs", skip=0)
 {
 	#The goal of this function is to convert peak caller output to GRanges
 	#bedfile is the name file that is peak caller output (typically a bed file)
 	
 	#type == "macs xls" #start pos +1, score -> -log?(fdr)
-	#type == "macs" #see below
+	#type == "macs" #see below, BED6?
 	#type == "zinba" #read w/header=T, must convert score to >1, has self overlaps 
 	#type == "homer" #
 	# cname = c("PeakID", "chr", "start", "end", "strand", "Normalized.Tag.Count", "focus.ratio",
@@ -23,7 +23,7 @@ peak2GRanges = function(bedfile, type="macs")
 	
 	#TODO: implement other types, keep in mind some have header
 	#	macs 2 and macs 1.4 might have different output
-	grgb = read.table(bedfile, sep="\t")
+	grgb = read.table(bedfile, sep="\t", skip=skip)
 	#type==macs
 	grg = GRanges(seqnames = Rle(grgb[,1]), ranges = IRanges(start=as.numeric(grgb[,2]),
 		end=as.numeric(grgb[,3]), names=grgb[,4]),
@@ -55,6 +55,7 @@ createResultMatrix = function(typ, fo)
 #       <--- 1 --->            #2 overlap
 #              <--- 2 --->     #1 overlap
 
+#TODO: examples and what happens when there is only one parameter
 extractOverlap = function(..., res, typ)
 {  #http://stackoverflow.com/questions/3057341/how-to-use-rs-ellipsis-feature-when-writing-your-own-function
 	#this is to read in case where 1st argument is a list (probably a better way to do this)
@@ -136,6 +137,29 @@ createOverlapMatrix = function(res, typ) {
 	# B		3	8	12
 	# C		4	9	13
 	#unique	5	0	14
+	#
+	#The 'all' row is overlap of ABC where the number that is shown is the number
+	#  of elements that contribute to the overlap from each of the 3 GRanges
+	#The A/B/C rows shows the overlap of A/B/C with each of the columns with
+	#  self overlaps included (A-A, B-B, C-C), typically these self overlaps are 0
+	#Lastly are the GRanges unique to each
+	#
+	#In the case of a 4-way venn diagram, an overlaps matrix would look like:
+	#		A	B	C	D
+	#all
+	# AB
+	# AC
+	# AD
+	# BC
+	# BD
+	# CD
+	#self
+	#unique
+	#
+	#This pattern can be generalized so that for an n-way comparison,
+	#  the following rows will be needed in the overlaps matrix
+	#  (since column is always the same as n)
+	#  all (n-1)
 	
 	n = ncol(res)
 	tf = factor(typ)
