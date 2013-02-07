@@ -4,6 +4,8 @@
 #License: ___ for private use only
 #Version: TESTING
 
+require(GenomicRanges)
+
 peak2GRanges = function(bedfile, type="macs", skip=0)
 {
 	#The goal of this function is to convert peak caller output to GRanges
@@ -114,7 +116,22 @@ print_overlap = function(..., res, typ) {
 }
 
 readinGRanges = function(...) {
-	glg = GRangesList(...)
+	#This is kind of ugly but neccessary to drop elementMetadata mismatches
+	tmp = list(...)
+	elmMd = lapply(tmp , function(x) names(elementMetadata(x)))
+	if(length(unique(lapply(elmMd, length))) == 1) {
+		elmMdKeep = lapply(apply(as.data.frame(elmMd),1, unique),length) == 1
+		warning("Metadata column(s) ", paste(which(!elmMdKeep), collapse=","), " mismatch and will be dropped")
+	} else { 
+		elmMdKeep = FALSE
+		warning("All metadata column(s) will be dropped")
+	}
+	for(i in 1:length(tmp)) {
+		elementMetadata(tmp[[i]]) = elementMetadata(tmp[[i]])[elmMdKeep]
+	}
+	glg = GRangesList(tmp)
+	#glg = GRangesList(...) #gives error on elementMetadata colname mismatch
+	
 	if(length(glg) < 2) { stop("Need more ranges to compare") }
 	if(length(glg) > 4) { warning("only tested up to 5 ranges") } #this somewhere else
 	#typ = rep(2^(0:(length(glg)-1)),as.numeric(lapply(glg, length))) 
@@ -138,8 +155,9 @@ createOverlapMatrix = function(res, typ) {
 	# C		4	9	13
 	#unique	5	0	14
 	#
-	#The 'all' row is overlap of ABC where the number that is shown is the number
-	#  of elements that contribute to the overlap from each of the 3 GRanges
+	#The 'all' row is overlap of ABC where the number shown is the number of
+	#  elements that contribute to the overlap from each of the 3 GRanges
+	#  ex. all-A means that A contributes 3 ranges to overlap set
 	#The A/B/C rows shows the overlap of A/B/C with each of the columns with
 	#  self overlaps included (A-A, B-B, C-C), typically these self overlaps are 0
 	#Lastly are the GRanges unique to each
@@ -159,7 +177,12 @@ createOverlapMatrix = function(res, typ) {
 	#This pattern can be generalized so that for an n-way comparison,
 	#  the following rows will be needed in the overlaps matrix
 	#  (since column is always the same as n)
-	#  all (n-1)
+	#  all (n), n-2 (n-2), n-4 (n-4), ... unique(n-k) where k is negative
+	#  all the ones in between (n-1, n-3) will be filled implicitly
+	#  ex. in n=3 you will have: All (3), A/B/C (1), unique(-1)
+	#  ex. in n=4: All(4), AB/AC/AD/BC/BD/CD (2), self (0), unique(-1)
+	#  self is a special case when counter is 0
+	#  you can see that in the case of n=3, self is included in (1) as A-A
 	
 	n = ncol(res)
 	tf = factor(typ)
