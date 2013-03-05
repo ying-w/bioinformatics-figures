@@ -1,7 +1,7 @@
 #Make venn diagram from GenomicRanges
 #Author: Ying Wu daiyingw@gmail.com
-#Current Update: October 2012
-#License: ___ for private use only
+#Current Update: March 2013
+#License: ___ (still deciding)
 #Version: TESTING
 
 require(GenomicRanges)
@@ -99,7 +99,7 @@ extractOverlap = function(..., res, typ)
 	ret
 }
 
-print_overlap = function(..., res, typ) {
+printOverlap = function(..., res, typ) {
 	#called by createOverlapMatrix()
 	#cat(paste("DEBUG: Processing",paste(as.character(...), collapse=" "),"\n"))
 	n = ncol(res)
@@ -195,7 +195,7 @@ createOverlapMatrix = function(res, typ) {
 	for(i in n:0) {
 		#cat(paste("DEBUG: i=", i, "current_row =", current_row, "\n"))
 		if(i == n-1) { 
-			overlap[current_row,] = print_overlap(levels(tf),res=res, typ=typ)
+			overlap[current_row,] = printOverlap(levels(tf),res=res, typ=typ)
 			rownames(overlap)[current_row] = "all"
 			current_row = current_row+1 
 		} else if(i == last_printed-2) { 
@@ -204,20 +204,23 @@ createOverlapMatrix = function(res, typ) {
 				rownames(overlap)[current_row] = "self"
 				current_row = current_row+1 
 			} else {
-				overlap[current_row:(current_row+choose(n,i)-1),] = t(apply(combn(levels(tf), i), 2, print_overlap, res=res, typ=typ)) 
+				overlap[current_row:(current_row+choose(n,i)-1),] = t(apply(combn(levels(tf), i), 2, printOverlap, res=res, typ=typ)) 
 				last_printed = i
 				rownames(overlap)[current_row:(current_row+choose(n,i)-1)] = apply(combn(levels(tf), i),2,paste, collapse=" ")
 				current_row = current_row + choose(n,i)
 			}
 		}
 	}
-	overlap[nrow(overlap),] = t(apply(combn(levels(tf), i), 2, print_overlap, res=res, typ=typ))
+	overlap[nrow(overlap),] = t(apply(combn(levels(tf), i), 2, printOverlap, res=res, typ=typ))
 	rownames(overlap)[nrow(overlap)] = "unique"
 	overlap
 }
 
-myVenn = function(res, typ, overlap=NA) {
-	if(any(is.na(overlap))) { overlap = createOverlapMatrix(res, typ) }
+createVenn = function(res, typ, overlap = NULL, weighted = FALSE, ...) {
+    if(!require("Vennerable", quietly = TRUE)) { stop("Missing Vennerable library. Please install via:
+	install.packages(\"Vennerable\", repos=\"http://R-Forge.R-project.org\", dependencies=TRUE) ")}
+
+	if(any(is.null(overlap))) { overlap = createOverlapMatrix(res, typ) }
 	
 	#see createOverlapMatrix() for details
 	n = ncol(res)
@@ -259,26 +262,23 @@ myVenn = function(res, typ, overlap=NA) {
 	rownames(counter)[nrow(counter)] = "unique"
 
 	#create venn diagram using 
-	if(!require("Vennerable", quietly = TRUE)) { stop("Missing Vennerable library. Please install via:
-	install.packages(\"Vennerable\", repos=\"http://R-Forge.R-project.org\", dependencies=TRUE) ")}
 	vc = sapply(1:(2^(n)-1), function(x) { round(median(overlap[counter %in% x])) })
-	plot(Venn(SetNames=colnames(res), Weight=c(0,vc)), doWeights=FALSE)
+	plot(Venn(SetNames=colnames(res), Weight=c(0,vc)), doWeights=weighted, ...)
 	
 	overlap
 }
 
-runall = function(...) {
+makeVennRunall = function(...) {
 	#suppressMessages(gc(verbose=FALSE)) #it likes to talkings
-	#can probably combine res/typ 
 	tmp = readinGRanges(...) #split tmp into res/typ
 	typ = tmp[,1]
 	res = apply(tmp[,2:ncol(tmp)], 2, as.numeric)
-	rm(tmp)
 	overlap = createOverlapMatrix(res,typ)
-	myVenn(res, typ, overlap)
+	createVenn(res, typ, overlap)
+    invisible(tmp)
 }
 
-example = function() {
+makeVennExample = function() {
 	g1 = read.table("./high1_peaks.bed", sep="\t")
 	g2 = read.table("./high2_peaks.bed", sep="\t")
 	g12 = read.table("./high_peaks.bed", sep="\t")
