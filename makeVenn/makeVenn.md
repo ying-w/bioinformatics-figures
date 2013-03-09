@@ -135,7 +135,7 @@ typ = rep(as.character(substitute(list(small, medium, large)))[-1L], as.numeric(
 fo = findOverlaps(unlist(glg), ignoreSelf = T)  #find overlaps
 res = createResultMatrix(typ, fo)  #results matrix
 overlap = createOverlapMatrix(res, typ)
-createVenn(res, typ, overlap)  #will print out overlap matrix
+createVenn(res, typ, overlap)  #will return overlap matrix
 ```
 
 ![plot of chunk unnamed-chunk-2](https://raw.github.com/ying-w/bioinformatics-figures/master/makeVenn/figure/unnamed-chunk-2.png) 

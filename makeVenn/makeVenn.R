@@ -216,12 +216,19 @@ createOverlapMatrix = function(res, typ) {
 	overlap
 }
 
-createVenn = function(res, typ, overlap = NULL, weighted = FALSE, ...) {
+createVenn = function(res, typ, overlap = NULL, name = NULL, weighted = FALSE, main=NULL) {
+    # This function is a bit complicated since I've tried to generalize the # of columns that res can have. 
+    # I might switch over to using VennDiagram library instead of Vennerable since the latter
+    # is not very well documented 
+    # VennDiagram can be found here: http://cran.r-project.org/web/packages/VennDiagram/ http://pubmed.gov/21269502
+    # more options here: http://www.biostars.org/p/7713/
+    
     if(!require("Vennerable", quietly = TRUE)) { stop("Missing Vennerable library. Please install via:
 	install.packages(\"Vennerable\", repos=\"http://R-Forge.R-project.org\", dependencies=TRUE) ")}
 
 	if(any(is.null(overlap))) { overlap = createOverlapMatrix(res, typ) }
-	
+	if(length(name) != ncol(res)) { name = colnames(res) } 
+    
 	#see createOverlapMatrix() for details
 	n = ncol(res)
 	tf = factor(typ)
@@ -261,10 +268,13 @@ createVenn = function(res, typ, overlap = NULL, weighted = FALSE, ...) {
 	counter[nrow(counter),] = weight
 	rownames(counter)[nrow(counter)] = "unique"
 
-	#create venn diagram using 
+	#create venn diagram using Vennerable
+    plot.new() #this is needed for text
 	vc = sapply(1:(2^(n)-1), function(x) { round(median(overlap[counter %in% x])) })
-	plot(Venn(SetNames=colnames(res), Weight=c(0,vc)), doWeights=weighted, ...)
-	
+	plotVenn(Venn(SetNames=name, Weight=c(0,vc)), doWeights=weighted)
+    # cannot pass in ... to above function
+    #text(-0.1, 0.01, main) #the coordinates change
+    mtext(main, side=1, at=0) #this is an ugly hack since cannot pass to plotVenn()
 	overlap
 }
 

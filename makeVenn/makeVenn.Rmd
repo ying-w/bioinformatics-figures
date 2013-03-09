@@ -79,7 +79,7 @@ typ = rep(as.character(substitute(list(small, medium, large)))[-1L], as.numeric(
 fo = findOverlaps(unlist(glg), ignoreSelf=T) #find overlaps
 res = createResultMatrix(typ, fo) #results matrix
 overlap = createOverlapMatrix(res,typ)
-createVenn(res, typ, overlap) #will print out overlap matrix
+createVenn(res, typ, overlap) #will return overlap matrix
 ```
 
 Make weighted venn diagram. When the differences in intersections are so great, the venn digram does not look good weighted.
