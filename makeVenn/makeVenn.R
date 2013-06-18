@@ -6,8 +6,8 @@
 
 require(GenomicRanges)
 
-peak2GRanges = function(bedfile, type="macs", skip=0)
-{
+peak2GRanges = function(bedfile, type="macs", skip=0) {
+
 	#The goal of this function is to convert peak caller output to GRanges
 	#bedfile is the name file that is peak caller output (typically a bed file)
 	
@@ -34,8 +34,8 @@ peak2GRanges = function(bedfile, type="macs", skip=0)
 	#self overlaps can be removed using reduce() but it would also get rid of metadata
 }
 	
-createResultMatrix = function(typ, fo)
-{ 
+createResultMatrix = function(typ, fo) {
+ 
 	#generate result matrix (required for every venn diagram)
 	#results matrix has n columns where n is the number of sets being compared
 	#results matrix has nrow(fo) rows
@@ -58,9 +58,10 @@ createResultMatrix = function(typ, fo)
 #              <--- 2 --->     #1 overlap
 
 #TODO: examples and what happens when there is only one parameter
-extractOverlap = function(..., res, typ)
-{  #http://stackoverflow.com/questions/3057341/how-to-use-rs-ellipsis-feature-when-writing-your-own-function
-	#this is to read in case where 1st argument is a list (probably a better way to do this)
+extractOverlap = function(..., res, typ) {  
+    #http://stackoverflow.com/questions/3057341/how-to-use-rs-ellipsis-feature-when-writing-your-own-function
+    
+	#This is to read in case where 1st argument is a list (probably a better way to do this)
 	if(length(list(...)) == 1) { argv = as.list(...) }
 	else { argv = list(...) }
 	#cat(paste("DEBUG: ",paste(argv, collapse=" "),"\n"))
@@ -86,6 +87,8 @@ extractOverlap = function(..., res, typ)
 	#if(length(unique(argv)) != length(argv)) { warning("Duplicate set removed") }
 	argv = unique(argv) #get rid of duplicates (should not exist anyways)
 	
+    #TODO: does not catch case where 3 elements all the same length(argv) == 3 && length(unique(argv)) == 1
+    # Use == 0 instead of >= 1 because harder to deal with multiple overlaps with the latter
 	if(length(argv) >= 2 && argv[1] != argv[2]) { #everything else
 		othercol = as.matrix(res[curtyp, !(colnames(res) %in% argv)])
 		if(ncol(othercol) == 0) { 
@@ -110,7 +113,8 @@ printOverlap = function(..., res, typ) {
 			arow[,i] = sum(extractOverlap(as.list(levels(tf)[c(i:n,1:i)[1:n]]),res=res,typ=typ))
 		}
 	} else {
-		arow = sapply(lapply(strsplit(paste(levels(tf)[c(1:n)], paste(as.character(...),collapse=" ")),split=" "), extractOverlap, res=res, typ=typ),sum)
+		arow = sapply(lapply(strsplit(paste(levels(tf)[c(1:n)], paste(as.character(...),collapse=" ")),split=" "), 
+            extractOverlap, res=res, typ=typ),sum)
 	}
 	arow
 }
@@ -151,8 +155,8 @@ createOverlapMatrix = function(res, typ) {
 	#       A   B	C
 	#all	3	3	3
 	# A		2	7	11
-	# B		3	8	12
-	# C		4	9	13
+	# B		6	8	12
+	# C		11	12	13
 	#unique	5	0	14
 	#
 	#The 'all' row is overlap of ABC where the number shown is the number of
@@ -177,12 +181,14 @@ createOverlapMatrix = function(res, typ) {
 	#This pattern can be generalized so that for an n-way comparison,
 	#  the following rows will be needed in the overlaps matrix
 	#  (since column is always the same as n)
-	#  all (n), n-2 (n-2), n-4 (n-4), ... unique(n-k) where k is negative
+	#  all (n), n-2 (n-2), n-4 (n-4), ... unique(n-k) where k is the first value > n
 	#  all the ones in between (n-1, n-3) will be filled implicitly
 	#  ex. in n=3 you will have: All (3), A/B/C (1), unique(-1)
 	#  ex. in n=4: All(4), AB/AC/AD/BC/BD/CD (2), self (0), unique(-1)
 	#  self is a special case when counter is 0
 	#  you can see that in the case of n=3, self is included in (1) as A-A
+    #
+    #This function makes heavy use of printOverlap which is described above
 	
 	n = ncol(res)
 	tf = factor(typ)
@@ -194,16 +200,16 @@ createOverlapMatrix = function(res, typ) {
 	
 	for(i in n:0) {
 		#cat(paste("DEBUG: i=", i, "current_row =", current_row, "\n"))
-		if(i == n-1) { 
+		if(i == n-1) { #special case: all overlap
 			overlap[current_row,] = printOverlap(levels(tf),res=res, typ=typ)
 			rownames(overlap)[current_row] = "all"
 			current_row = current_row+1 
 		} else if(i == last_printed-2) { 
-			if(i == 0) {
+			if(i == 0) { #special case: self overlap (only explicitly shown in some)
 				overlap[current_row,] = sapply(apply(rbind(levels(tf), levels(tf)), 2, extractOverlap, res=res, typ=typ),sum)
 				rownames(overlap)[current_row] = "self"
 				current_row = current_row+1 
-			} else {
+			} else { # base case, combn in apply is the key part
 				overlap[current_row:(current_row+choose(n,i)-1),] = t(apply(combn(levels(tf), i), 2, printOverlap, res=res, typ=typ)) 
 				last_printed = i
 				rownames(overlap)[current_row:(current_row+choose(n,i)-1)] = apply(combn(levels(tf), i),2,paste, collapse=" ")
@@ -219,8 +225,9 @@ createOverlapMatrix = function(res, typ) {
 createVenn = function(res, typ, overlap = NULL, name = NULL, weighted = FALSE, main=NULL) {
     # This function is a bit complicated since I've tried to generalize the # of columns that res can have. 
     # I might switch over to using VennDiagram library instead of Vennerable since the latter
-    # is not very well documented 
+    # is not well documented and maintainer does not really respond to inquries
     # VennDiagram can be found here: http://cran.r-project.org/web/packages/VennDiagram/ http://pubmed.gov/21269502
+    # both make use of the grid library to draw, see end of function for more details
     # more options here: http://www.biostars.org/p/7713/
     
     if(!require("Vennerable", quietly = TRUE)) { stop("Missing Vennerable library. Please install via:
@@ -275,7 +282,26 @@ createVenn = function(res, typ, overlap = NULL, name = NULL, weighted = FALSE, m
     # cannot pass in ... to above function
     #text(-0.1, 0.01, main) #the coordinates change
     mtext(main, side=1, at=0) #this is an ugly hack since cannot pass to plotVenn()
-	overlap
+    
+    # VennDiagram library takes list of overlaps
+
+    # ballpark method
+    # convert results matrix (res) into this list
+    # ll = as.list(as.data.frame(res))
+    # ll2 = lapply(ll, identical, 0)
+    # grid.draw(venn.diagram(x=ll2, filename=NULL, scaled=TRUE))
+    # this method doesnt work very well since scaling wont work and numbers are off
+    
+    # convert from Venn() input
+	# counter = matrix("", sum(vc)+2,n) #different from above
+	# colnames(counter) = levels(tf)
+    ## fill up matrix with characters that are unique, VennDiagram uses intercept()
+    # vennlist = as.list(as.data.frame(counter))
+    ##names(vennlist) = colnames(res)
+    # grid.draw(venn.diagram(x=vennlist, filename=NULL, scaled=TRUE))
+    ## scaling does not work for 3-way (email on 5/1/2013 says that they will look into it)
+    # draw.triple.venn(100, 240, 85, 21, 46, 17, 6, scaled=TRUE, euler.d=TRUE) #example code
+    ## once you have 2 non-zero intersections, the scaling code will not work
 }
 
 makeVennRunall = function(...) {
