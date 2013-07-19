@@ -75,7 +75,13 @@ grid.draw(venn.diagram(x=venn_list, filename=NULL, scaled=TRUE)) #will draw over
 ```
 
 ## Conversion Function
-Below is a function that can convert between these 3 types
+To convert between the these 3 types I created a function (below) that can be used like this:
+
+    new_vennlist = convertVennInput(venn_matrix, type = "list") #matrix -> list
+    new_vennmatrix = convertVennInput(venn_vector, type = "matrix") #vector -> matrix
+    new_vennvector = convertVennInput(venn_list, type = "matrix") #list -> vector
+
+Function code below and also [here](convertVennInput.R)
 
 ```{r fxn}
 convertVennInput = function(venndata, type = "matrix") {

@@ -2,8 +2,10 @@
 
 ## Intro
 
-I created these function because I got frustrated with how slow the ChIPseqAnno package was and 
-the preceieved lack of utilities for making good venn diagrams with GRanges. 
+I created these function due to frustration with how slow the ChIPseqAnno package was and 
+the perceived lack of utilities for making good venn diagrams with GRanges and cut out overlaps of these venn diagrams.
+
+I am using this mostly for chip-seq data but I would imagine this could be used for any Genomic ranges based data.
 
 This document is still a work in progress is currently only a brief outline of functions and an example.
 
@@ -17,7 +19,7 @@ INCOMPLETE. The goal of this function is to convert peak caller output to GRange
 Generate a 'result matrix' (required for every venn diagram)
 - results matrix has n columns where n is the number of sets being compared and nrow(fo) rows
 - typ is a vector differentiating between the different GRanges
-- fo is result of `findOverlaps()`
+- fo is result of `findOverlaps()` function in IRanges package
 
 *extractOverlap*(..., res, typ)
 Given res and typ, it will return a true/false vector indexed by whatever column name(s) it is passed in '...'
@@ -33,14 +35,14 @@ This function will create an overlap matrix. An overlap matrix is a human readab
 all possible overlaps. See source for more details and examples.
 
 *createVenn*(res, typ, overlap = NA, doWeights = FALSE, ...)
-Create venn diagram using Vennerable library (can draw up to 5-way venn diagrams, if there are libraries that draw better
+Create venn diagram using Vennerable library (can draw up to 5-way venn diagrams (If there are libraries that draw better
 I would be happy to stick it in).
 
 *makeVennRunall*(...)
 Put in GRanges, get a venn diagram (type and result matrix are returned invisibily)
 
 *makeVennExample*()
-INCOMPLETE This example only works if you have named `high1_peaks.bed` `high2_peaks.bed` and `high_peaks.bed` 
+INCOMPLETE This example only works if you have 3 bed files named `high1_peaks.bed` `high2_peaks.bed` and `high_peaks.bed` 
 in the current directory with score in the 5th column.
 
 ## Example
@@ -62,24 +64,24 @@ source("makeVenn.R")
 # tmpgrg = GRanges(seqnames = Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]),
     # end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9])
 # large = tmpgrg
+# save(small, medium, large, file="makeVenn.rd")
 
 load("makeVenn.rd")
-
-head(small)
-head(medium)
-head(large)
 ```
 
 You can then put it into `makeVennRunall(small, medium, large)` or go through each of the steps individually.
-Skip using `readinGRanges()` since this function is not complete and might change later.
 
+Don't use `readinGRanges()` since this function is not complete and might be changed later.
+
+Quick run through: (`makeVennRunall()` will run these functions)
 ```{r}
 glg = GRangesList(small, medium, large) #GRanges list
 typ = rep(as.character(substitute(list(small, medium, large)))[-1L], as.numeric(lapply(glg, length)))
 fo = findOverlaps(unlist(glg), ignoreSelf=T) #find overlaps
 res = createResultMatrix(typ, fo) #results matrix
 overlap = createOverlapMatrix(res,typ)
-createVenn(res, typ, overlap) #will return overlap matrix
+createVenn(res, typ, overlap)
+overlap
 ```
 
 Make weighted venn diagram. When the differences in intersections are so great, the venn digram does not look good weighted.
@@ -87,6 +89,7 @@ Make weighted venn diagram. When the differences in intersections are so great, 
 createVenn(res, typ, overlap, weighted=TRUE) #will print out overlap matrix
 ```
 
+### Using makeVenn to cut out overlaps of interest
 Isolate regions in `large` that overlap all regions
 ```{r}
 # large must be specified first in extractOverlap
@@ -107,6 +110,30 @@ Isolate regions that are self overlaps in `medium`
 medium_self_overlap = medium[extractOverlap("medium", "medium", res=res, typ=typ)]
 length(medium_self_overlap)
 head(medium_self_overlap)
+
+medium_fo = findOverlaps(medium_self_overlap, medium)
+head(medium_fo, n=8)
+head(medium[subjectHits(medium_fo)], n=8)
 ```
 
+## Additional info
+Output from each step:
+```{r}
+head(small)
+length(small)
+head(medium)
+length(medium)
+head(large)
+length(large)
+
+head(typ)
+length(typ)
+table(typ)
+head(fo) #special class
+nrow(as.matrix(fo))
+head(res)
+dim(res)
+
+sessionInfo()
+```
 Note to self: I followed the example shown here: https://github.com/yihui/knitr-examples

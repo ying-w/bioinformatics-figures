@@ -53,6 +53,7 @@ createResultMatrix = function(typ, fo) {
 
 #self overlaps will be double counted
 #self overlaps can be odd numbers:
+#<- 1 ->
 #<--- 1 --->                   #self overlap
 #       <--- 1 --->            #2 overlap
 #              <--- 2 --->     #1 overlap
@@ -281,7 +282,8 @@ createVenn = function(res, typ, overlap = NULL, name = NULL, weighted = FALSE, m
 	plotVenn(Venn(SetNames=name, Weight=c(0,vc)), doWeights=weighted)
     # cannot pass in ... to above function
     #text(-0.1, 0.01, main) #the coordinates change
-    mtext(main, side=1, at=0) #this is an ugly hack since cannot pass to plotVenn()
+    # mtext(main, side=1, at=0) #this is an ugly hack since cannot pass to plotVenn()
+    # above mtext command causes "invalid graphics state" errors
     
     # VennDiagram library takes list of overlaps
 
