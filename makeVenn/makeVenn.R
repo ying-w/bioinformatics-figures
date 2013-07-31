@@ -91,11 +91,11 @@ extractOverlap = function(..., res, typ) {
     #TODO: does not catch case where 3 elements all the same length(argv) == 3 && length(unique(argv)) == 1
     # Use == 0 instead of >= 1 because harder to deal with multiple overlaps with the latter
 	if(length(argv) >= 2 && argv[1] != argv[2]) { #everything else
-		othercol = as.matrix(res[curtyp, !(colnames(res) %in% argv)])
-		if(ncol(othercol) == 0) { 
-			othercol = rep(TRUE, nrow(othercol))
-		} else {
-			othercol = apply(othercol == 0, 1, all) #all others == 0
+		othercol = as.matrix(res[curtyp, !(colnames(res) %in% argv)]) #TODO consider changing to matrix to account for 0 row/col cases
+		if(all(colnames(res) %in% argv)) { #using all columns 
+			othercol = rep(TRUE, sum(curtyp)) #use sum not nrow for length 1 case
+		} else { #othercol is TRUE for conditions (columns) of interest
+			othercol = apply(as.matrix(othercol == 0), 1, all) #all others == 0
 		}
 		ret = apply(as.matrix(res[curtyp, colnames(res) %in% argv[-1]]) > 0, 1, all) & #all specified sets are >0
 			 othercol #all others == 0
@@ -124,21 +124,38 @@ readinGRanges = function(...) {
 	#This is kind of ugly but neccessary to drop elementMetadata mismatches
 	tmp = list(...)
 	elmMd = lapply(tmp , function(x) names(elementMetadata(x)))
-	if(length(unique(lapply(elmMd, length))) == 1) {
-		elmMdKeep = lapply(apply(as.data.frame(elmMd),1, unique),length) == 1
-		warning("Metadata column(s) ", paste(which(!elmMdKeep), collapse=","), " mismatch and will be dropped")
-	} else { 
-		elmMdKeep = FALSE
-		warning("All metadata column(s) will be dropped")
-	}
-	for(i in 1:length(tmp)) {
-		elementMetadata(tmp[[i]]) = elementMetadata(tmp[[i]])[elmMdKeep]
-	}
+    allMd = unique(unlist(elmMd))
+    if(length(allMd) >= 1) {
+        sharedMd = apply(matrix(unlist(lapply(elmMd, function(x) { allMd %in% x } )), nrow=length(allMd)), 1, all)
+        
+        # elmMd holds list of metadata matricies, clean up metadata cases:
+        # 1. metadata all match -> dont drop anything
+        # 2. only some metadata match -> extract matching, drop rest
+        # 3. no metadata match -> drop everything
+        #TODO clean up logic around here
+        #if(all(lapply(elmMd, length) == length(elmMd[[1]])) && all(unlist(lapply(elmMd, identical, elmMd[[1]])))) { 
+        if(all(sharedMd)) {
+            #same length and same elements
+            elmMdKeep = lapply(elmMd, function(x) { rep(TRUE, times=length(x)) } )
+        #} else if (length(unique(lapply(elmMd, length))) == 1) {
+        } else if (sum(sharedMd) > 1) {
+            #elmMdKeep = lapply(apply(as.data.frame(elmMd),1, unique),length) == 1
+            #warning("Metadata column(s) ", paste(which(!elmMdKeep), collapse=","), " mismatch and will be dropped")
+            elmMdKeep = lapply(elmMd, function(x) { x %in% allMd[sharedMd] } ) #could prob just replace everything w/this line
+            warning("Metadata column(s) ", paste(allMd[!sharedMd]), " mismatch and will be dropped")
+        } else { 
+            elmMdKeep = lapply(elmMd, function(x) { rep(FALSE, times=length(x)) } )
+            warning("All metadata column(s) will be dropped")
+        }
+        for(i in 1:length(tmp)) { #TODO convert to apply
+            elementMetadata(tmp[[i]]) = elementMetadata(tmp[[i]])[elmMdKeep[[i]]]
+        }
+    }
 	glg = GRangesList(tmp)
 	#glg = GRangesList(...) #gives error on elementMetadata colname mismatch
 	
 	if(length(glg) < 2) { stop("Need more ranges to compare") }
-	if(length(glg) > 4) { warning("only tested up to 5 ranges") } #this somewhere else
+	if(length(glg) > 5) { warning("only tested up to 5 ranges") } #this somewhere else
 	#typ = rep(2^(0:(length(glg)-1)),as.numeric(lapply(glg, length))) 
 	#fo = findOverlaps(c(g1.r, g2.r, g12.r, .ignoreElementMetadata=TRUE), ignoreSelf=T)
 	typ = rep(as.character(substitute(list(...)))[-1L], as.numeric(lapply(glg, length))) #since lapplay returns list
@@ -271,7 +288,7 @@ createVenn = function(res, typ, overlap = NULL, name = NULL, weighted = FALSE, m
 				current_row = current_row + choose(n,i)
 			}
 		}
-	}
+	} #for
 	counter[counter %in% weight] = 0 #remove self overlaps
 	counter[nrow(counter),] = weight
 	rownames(counter)[nrow(counter)] = "unique"
@@ -313,7 +330,7 @@ makeVennRunall = function(...) {
 	res = apply(tmp[,2:ncol(tmp)], 2, as.numeric)
 	overlap = createOverlapMatrix(res,typ)
 	createVenn(res, typ, overlap)
-    invisible(tmp)
+    invisible(overlap)
 }
 
 makeVennExample = function() {
