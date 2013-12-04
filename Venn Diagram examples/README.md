@@ -4,6 +4,9 @@
 
 There are multiple ways to input data for venn diagrams. This document will go over 3 of the common input methods that I have encountered:
 
+### Todo
+show example of diffbind -> venn diagram
+
 ## Compressed Vector (Vennerable package)
 Each overlap for venn diagram is encoded in a vector where the vector index  
 can be converted into a binary number that corresponds to membership in set of venn diagram.

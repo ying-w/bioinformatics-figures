@@ -1,7 +1,7 @@
 bioinformatics-figures
 ======================
 
-Collection of scripts and examples that will help visualize bioinformatics data. 
+Collection of scripts and examples that will help visualize sequencing data. 
 Most of the scripts are for visualizing sequencing overlaps from ChIP-seq / DNase-seq / FAIRE-seq experiments using venn diagrams
 
 * [Venn Diagram examples](Venn Diagram examples/) -- Making venn diagrams in R using limma / Vennerable / VennDiagram libraries (input format conversion)

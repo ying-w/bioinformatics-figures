@@ -1,7 +1,9 @@
 methylcircleplot.R
 ==================
 
-This guide will go through the process to make methylation figures (and also NOME-seq figures) similar to the one below:
+This guide will go through the process to make methylation lollipop diagrams for bisulfite sequencing 
+(and also color the lollipops different for [NOME-seq](http://www.ncbi.nlm.nih.gov/pubmed/22960375) ) 
+similar to the one below:
 ![image](http://codingenes.files.wordpress.com/2012/10/fig-title.png)
 
 Prerequisites
@@ -17,7 +19,7 @@ Prerequisites
 
 Reference to be used to identify potential CpG and GpCs sites
 
-Bisulfate converted sequence (files must end in .txt or .fasta)
+Bisulfite converted sequence (files must end in .txt or .fasta)
 
 1. In a multi-fasta file  
 	
@@ -120,7 +122,7 @@ While reference (`ref.seq`) and bisulfite sequence (`bis.seq`) are required, the
 Some examples of what the parameters look like can be found [here](http://codingenes.wordpress.com/2012/08/23/script-methylation-figure-generation/#more-57)
 Parameters and defaults listed below:
 
-`rev.comp = FALSE` reverse complements bisulfate sequence
+`rev.comp = FALSE` reverse complements bisulfite sequence
 
 `size = 2` size of circles
 
