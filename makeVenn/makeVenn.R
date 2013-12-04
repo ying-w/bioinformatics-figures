@@ -1,8 +1,7 @@
 #Make venn diagram from GenomicRanges
 #Author: Ying Wu daiyingw@gmail.com
-#Current Update: March 2013
-#License: ___ (still deciding)
-#Version: TESTING
+#Last major revision: March 2013
+#License: GPLv2
 
 require(GenomicRanges)
 
@@ -68,7 +67,7 @@ extractOverlap = function(..., res, typ) {
 	#cat(paste("DEBUG: ",paste(argv, collapse=" "),"\n"))
 	
 	#TODO: input checking
-	if(length(argv) == 0) { stop("Must specify at least one set\n\tUsage: extractOverlap(1,2,res=res,typ=typ)") }
+	if(length(argv) == 0) { stop("Must specify at least one set\n\tUsage: extractOverlap(set1,set2,res=res,typ=typ)") }
 	#if(length(argv) > ncol(res)) { stop("number of overlaps greater than sets in venn diagram") }
 	argv = as.character(argv)
 	if(!all(argv %in% colnames(res))) { 
@@ -170,12 +169,12 @@ createOverlapMatrix = function(res, typ) {
 	#This function will create an overlap matrix
 	#An overlap matrix is a human readable matrix that enumerates all possible overlaps
 	#An example of this for a 3-way venn diagram is as follows:
-	#       A   B	C
-	#all	3	3	3
-	# A		2	7	11
-	# B		6	8	12
-	# C		11	12	13
-	#unique	5	0	14
+    #       A   B   C
+    #all    3   3   3
+    # A     2   7   11
+    # B     6	8   12
+    # C     11	12  13
+    #unique 5   0   14
 	#
 	#The 'all' row is overlap of ABC where the number shown is the number of
 	#  elements that contribute to the overlap from each of the 3 GRanges

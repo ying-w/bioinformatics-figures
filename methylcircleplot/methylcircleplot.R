@@ -1,11 +1,14 @@
-#DNA methylation figure creator
-#Author: Ying Wu daiyingw@usc.edu
-#Current Update: Nov 2012
-#License: GPLv3
+# DNA methylation lollipop figure creator
+# Author: Ying Wu daiyingw@usc.edu
+# http://dx.doi.org/10.6084/m9.figshare.842634
+# Current Update: Nov 2012
 #
-#Step by step examples and directions can be found here:
-# https://github.com/ying-w/bioinformatics-figures/tree/master/methylcircleplot
-# Must download local copy for R, since you cannot source() https
+# This code is licensed under GPLv2, details information can be found here:
+# http://www.gnu.org/licenses/gpl-2.0.html
+#
+# Step by step examples and directions can be found here:
+#  https://github.com/ying-w/bioinformatics-figures/tree/master/methylcircleplot
+# Must download local copy for R
 #
 #Quickstart directions:
 #Change ref.seq/fwd.primer/rev.primer/bis.seq in examplerun()

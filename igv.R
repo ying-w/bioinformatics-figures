@@ -1,10 +1,22 @@
-#R and IGV integration
+# Output IGV snapshots/screenshots from R
+# Author: Ying Wu daiyingw@usc.edu
+# Current version: July 2013
+#
+# Take genomic coordinates (from BED file) or GRanges objects and pass them to
+# IGV using default port that IGV is listening on and export pic of region
+#
 # Possible to run this remotely by using
 # ssh -Y and `cat` the shortcut, should look something like this:
 # javaws "/home/<username>/.icedtea/cache/0/http/www.broadinstitute.org/igv/projects/current/igv_lm.jnlp"
 #
 # For a list of commands see: http://www.broadinstitute.org/igv/PortCommands
 # Example: http://plindenbaum.blogspot.com/2011/07/controlling-igv-through-port-my.html
+#
+# Sometimes IGV will die after being open for too long for no reason, when that happens, this script will hang
+#
+# TODO:
+# need to be more robust to different delimiters
+# figure out a way to first detect if IGV is running
 
 r2igv = function(..., dist=200, igv=FALSE, prefix="tmp") {
   # Assume IGV is already open and proper session is loaded with snapshot directory set
