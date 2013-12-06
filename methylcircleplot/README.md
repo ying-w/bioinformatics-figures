@@ -1,9 +1,9 @@
-methylcircleplot.R
-==================
+methylcircleplot.R (methyl lollipop diagrams)
+=============================================
 
 This guide will go through the process to make methylation lollipop diagrams for bisulfite sequencing 
-(and also color the lollipops different for [NOME-seq](http://www.ncbi.nlm.nih.gov/pubmed/22960375) ) 
-similar to the one below:
+(and also color the lollipops differently for [NOME-seq](http://www.ncbi.nlm.nih.gov/pubmed/22960375))
+
 ![image](http://codingenes.files.wordpress.com/2012/10/fig-title.png)
 
 Prerequisites
@@ -77,7 +77,7 @@ dev.off()
 ~~~~
 
 ###Details
-start up an R (or Rstudio) session and load the script using 
+Start up an R (or Rstudio) session and load the script using 
 
 	source("methylcircleplot.R") 
 
@@ -157,7 +157,7 @@ Additional Notes
 ----------------
 By default, R will set the size (resolution) of the figure and space out the rows as much as possible. 
 It is possible to specify how much distance should be between the rows but this only works for a certain figure size/resolution.
-If figure dimensions is increased (see png() command), you will need to adjust size and scaling values to keep the look the same
+If figure dimensions is increased (see png() command), you will need to adjust size and scaling values (`res` and `pointsize`) to keep the look the same
 I have yet to find a way to 'autoscale' size and spacing to account for changes in figure size/resolution.
 
 By having a `png()` command before `methycircleplot()` and `dev.off()` command after, R will save the plot generated a specified .png file.
@@ -165,14 +165,15 @@ It is also possible to export pdfs and tiffs by replacing `png()` with `pdf()` o
 As a sidenote, `pdf()` and `svg()` require width and height to be specified in inches (instead of pixels)
  such as `svg("clone.svg", width=5.5, height=4)` (default is 7x7)
 
-Occasionally you may encounter some odd banding patterns when using `png()` to export. 
+Occasionally you may encounter some vertical banding patterns when using `png()` to export. 
 To work around this, I typically export with `pdf()` and use the linux `convert` utility to change the file from .pdf to .png. 
 Another workaround would be to export using `svg()` and then convert to png (using Inkscape). 
 I have found that svg files produced by R sometimes have font incompatibility issues with Adobe Illustrator, so to 
 work around this and keep everything vectorized, I first open the .svg file using Inkscape, then export a .emf file for Illustrator to open.
+(or just export pdf and open in Illustrator)
 
 List of colors in R can be found [here](http://research.stowers-institute.org/efg/R/Color/Chart/)
 
-RCurl can be used to keep the script up to date:
+RCurl can be used to keep the script up to date (but would add extra dependencies):
 * http://tonybreyal.wordpress.com/2011/11/24/source_https-sourcing-an-r-script-from-github/
 * http://stackoverflow.com/questions/7715723/sourcing-r-script-over-https
