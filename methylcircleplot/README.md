@@ -84,7 +84,7 @@ dev.off()
 
 ###Details
 Start up an R (or Rstudio) session with the sequence from clones in a `clone.fasta` file and this script saved in the same folder 
-Start up R in that folder or use `setdir()` to navigate to the folder. Load the script using 
+Navigate R to the folder with this script and load it using 
 
 	source("methylcircleplot.R") 
 
