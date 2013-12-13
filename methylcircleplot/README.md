@@ -14,12 +14,11 @@ Prerequisites
 * [Bioconductor](http://bioconductor.org/install/) must be installed along with [Biostrings](http://bioconductor.org/packages/release/bioc/html/Biostrings.html)
 * [Script file](https://raw.github.com/ying-w/bioinformatics-figures/master/methylcircleplot/methylcircleplot.R) needs to be saved in the current working directory
 
-Citing
-------
+**Citing**
 If you use this, please cite as:
+
 Wu, Dai-Ying (2013): methylcircleplot: a tool for visualizing CpG and GpC methylation status across multiple samples and loci. *figshare*. 
 http://dx.doi.org/10.6084/m9.figshare.842634
-
 
 **Sequence:**
 
@@ -118,7 +117,7 @@ After you have created a suitable figure you can save it in PNG format by using 
 	dev.off()
 	
 It is possible to adjust the width and height to be larger numbers.
-For more options on output format (such as tiff images): see http://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/png.html
+For more options on output format (such as tiff images) see [here](http://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/png.html)
 
 It is also possible to export to vectorized pdf this way (see additional notes below)
 
@@ -127,7 +126,8 @@ Optional parameters
 While reference (`ref.seq`) and bisulfite sequence (`bis.seq`) are required, there are other parameters that can be set.
 
 Some examples of what the parameters look like can be found [here](http://codingenes.wordpress.com/2012/08/23/script-methylation-figure-generation/#more-57)
-Parameters and defaults listed below:
+
+**Parameters and defaults listed below**:
 
 `rev.comp = FALSE` reverse complements bisulfite sequence
 
