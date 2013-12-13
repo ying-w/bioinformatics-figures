@@ -6,27 +6,29 @@ This guide will go through the process to make methylation lollipop diagrams for
 
 ![image](http://codingenes.files.wordpress.com/2012/10/fig-title.png)
 
-Prerequisites
--------------
-**Software:**
-* [R](http://www.r-project.org/) must be installed. 
-  If you are new to R, I would suggest also installing [R-studio](http://www.rstudio.com/)
-* [Bioconductor](http://bioconductor.org/install/) must be installed along with [Biostrings](http://bioconductor.org/packages/release/bioc/html/Biostrings.html)
-* [Script file](https://raw.github.com/ying-w/bioinformatics-figures/master/methylcircleplot/methylcircleplot.R) needs to be saved in the current working directory
-
 **Citing:**
 
 Wu, Dai-Ying (2013): methylcircleplot: a tool for visualizing CpG and GpC methylation status across multiple samples and loci. *figshare*. 
 http://dx.doi.org/10.6084/m9.figshare.842634
 
+Prerequisites
+-------------
+**Software:**
+
+* [R](http://www.r-project.org/) must be installed. 
+  If you are new to R, I would suggest also installing [R-studio](http://www.rstudio.com/)
+* [Bioconductor](http://bioconductor.org/install/) must be installed along with [Biostrings](http://bioconductor.org/packages/release/bioc/html/Biostrings.html)
+* [Script file](https://raw.github.com/ying-w/bioinformatics-figures/master/methylcircleplot/methylcircleplot.R) needs to be saved in the current working directory
+
 **Sequence:**
 
-Reference to be used to identify potential CpG and GpCs sites
+* Reference to be used to identify potential CpG and GpCs sites
 
-Bisulfite converted sequence (files must end in .txt or .fasta)
+* Bisulfite converted sequence (files must end in .txt or .fasta)
 
-1. In a multi-fasta file (ie. clone.fasta)
-	
+    1. In a multi-fasta file (ie. clone.fasta)
+        
+        ```
         >methyl
         tgggctgaaatactgggttcacccatatttaggattttaggcgggtgggcaagtaagaattga
         ggagtggttttagaaataattggtatacgaatatttaatggatgttttaggttttttagagga
@@ -39,15 +41,18 @@ Bisulfite converted sequence (files must end in .txt or .fasta)
         tgggctgaaatactgggttcacccatatttaggattttaggcgggtgggtaagtaagaattga
         ggagtggttttagaaataattggcatatgaatatttaatggatgttttaggctttttagagga
         tggctgagtggggtgtaaggataggtcgagaatggctggacacctggcttcag
-
-2. In a folder with each file being a single-fasta file
-3. In a file with each line being a different set
-
+        ```
+        
+    2. In a folder with each file being a single-fasta file
+    3. In a file with each line being a different set
+        
+        ```
         tgggctgaaatactgggttcacccatatttaggattttaggcgggtgggcaagtaagaattgaggagtggttttagaaataattggtatacgaatatttaatggatgttttaggttttttagaggatggttgagtgggttgtaaggataggtcgagaatggctggacacctggcttcag
         tgggctgaaatactgggttcacccatatttaggattttaggcgggtgggtaagcaagaattgaggagtggctttagaaataattggcatatgaatatttaatggatgttttaggctttttagaggatggctgagtgggctgtaaggataggctgagaatggctggacacctggcttcag
         tgggctgaaatactgggttcacccatatttaggattttaggcgggtgggtaagtaagaattgaggagtggttttagaaataattggcatatgaatatttaatggatgttttaggctttttagaggatggctgagtggggtgtaaggataggtcgagaatggctggacacctggcttcag
-
-Primer sequence (optional) in 5'->3' orientation
+        ```
+        
+* Primer sequence (optional) in 5'->3' orientation
 
 Overview
 --------
