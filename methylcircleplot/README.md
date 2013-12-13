@@ -11,9 +11,15 @@ Prerequisites
 **Software:**
 * [R](http://www.r-project.org/) must be installed. 
   If you are new to R, I would suggest also installing [R-studio](http://www.rstudio.com/)
-* [Bioconductor](http://bioconductor.org/install/) must be installed
-* [Biostrings](http://bioconductor.org/packages/release/bioc/html/Biostrings.html) package in bioconductor
+* [Bioconductor](http://bioconductor.org/install/) must be installed along with [Biostrings](http://bioconductor.org/packages/release/bioc/html/Biostrings.html)
 * [Script file](https://raw.github.com/ying-w/bioinformatics-figures/master/methylcircleplot/methylcircleplot.R) needs to be saved in the current working directory
+
+Citing
+------
+If you use this, please cite as:
+Wu, Dai-Ying (2013): methylcircleplot: a tool for visualizing CpG and GpC methylation status across multiple samples and loci. *figshare*. 
+http://dx.doi.org/10.6084/m9.figshare.842634
+
 
 **Sequence:**
 
@@ -49,7 +55,7 @@ Overview
 --------
 This program uses reference sequence to find CpG and GpC sites. Primers are used to isolate the sequence of interest. 
 Sequence of interest is then aligned to reference sequence to find corresponding CpG and GpC sites. 
-These sites are checked for methylation and result is displayed with circles.
+These sites are checked for methylation and result is displayed with circles (lollipops).
 
 Example
 -------
@@ -77,13 +83,14 @@ dev.off()
 ~~~~
 
 ###Details
-Start up an R (or Rstudio) session and load the script using 
+Start up an R (or Rstudio) session with the sequence from clones in a `clone.fasta` file and this script saved in the same folder 
+Start up R in that folder or use `setdir()` to navigate to the folder. Load the script using 
 
 	source("methylcircleplot.R") 
 
 If the command does not work, make sure the R working directory is in the same folder as the location of the file you downloaded 
-(use `getwd()` to check and `setwd()` to change). R starts in a default working directory and that is where
-it looks automatically for files such as methylcircleplot.R and the file you specify for bis.seq
+(use `getwd()` to check and `setwd()` to change working dir). R starts in a default working directory and that is where
+it looks automatically for files such as `methylcircleplot.R` and the file you specify for clone sequence.
 
 Next, specify the reference sequence and file/folder with bisulfite sequence. Remember to surround them with quotes.
 
@@ -94,7 +101,7 @@ ref.seq = "atatctaggactctaggcgggtgggtaa
 	tgggctgtaaggacaggccgaga"
 bis.seq = "clone.fasta"
 ~~~~
-Lastly, specify primers. (Optional step)
+Lastly, specify primers. (Optional but recommended)
 
 	fwd.primer = "tgggctgaaatactgggttcaccc"
 	rev.primer = "atggctggacacctggcttcag"
@@ -111,9 +118,9 @@ After you have created a suitable figure you can save it in PNG format by using 
 	dev.off()
 	
 It is possible to adjust the width and height to be larger numbers.
-For more options on output format (such as tiff): see http://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/png.html
+For more options on output format (such as tiff images): see http://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/png.html
 
-It is also possible to export to pdf this way (see additional notes below)
+It is also possible to export to vectorized pdf this way (see additional notes below)
 
 Optional parameters
 -------------------
