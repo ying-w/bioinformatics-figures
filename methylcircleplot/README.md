@@ -14,8 +14,7 @@ Prerequisites
 * [Bioconductor](http://bioconductor.org/install/) must be installed along with [Biostrings](http://bioconductor.org/packages/release/bioc/html/Biostrings.html)
 * [Script file](https://raw.github.com/ying-w/bioinformatics-figures/master/methylcircleplot/methylcircleplot.R) needs to be saved in the current working directory
 
-**Citing**
-If you use this, please cite as:
+**Citing:**
 
 Wu, Dai-Ying (2013): methylcircleplot: a tool for visualizing CpG and GpC methylation status across multiple samples and loci. *figshare*. 
 http://dx.doi.org/10.6084/m9.figshare.842634
@@ -26,7 +25,7 @@ Reference to be used to identify potential CpG and GpCs sites
 
 Bisulfite converted sequence (files must end in .txt or .fasta)
 
-1. In a multi-fasta file  
+1. In a multi-fasta file (ie. clone.fasta)
 	
         >methyl
         tgggctgaaatactgggttcacccatatttaggattttaggcgggtgggcaagtaagaattga
