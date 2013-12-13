@@ -44,15 +44,16 @@ convertVennInput = function(venndata, type = "matrix") {
     else { stop("Input data type not recognized, must be either vector of numbers, matrix of logicals or list of identifiers") }
     
     #output
-    if(type == "matrix") { venn }
-    else if(type == "list") { 
+    if(type == "matrix") { venn } #internal representation is as matrix
+    else if(type == "list") { # convert to list using rownames
         if(is.null(rownames(venn))) { rownames(venn) = 1:nrow(venn) }
-        apply(venn, 2, function(i) { rownames(venn)[which(i)] } ) 
+        apply(venn, 2, function(i) { as.integer(rownames(venn)[which(i)]) } )
     }
-    else if(type == "vector") { 
+    else if(type == "vector") { # convert to vector summing values
+        #left columns are bigger
         tmp = venn
         for(i in ncol(venn):1) {
-            tmp[venn[,i],i] = 2^(ncol(venn)-i)
+            tmp[venn[,i],i] = 2^(i-1)
         }
         vt = table(rowSums(tmp))
         vec = rep(0, 2^ncol(venn))
