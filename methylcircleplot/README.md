@@ -63,7 +63,7 @@ These sites are checked for methylation and result is displayed with circles (lo
 Example
 -------
 ![image](http://codingenes.files.wordpress.com/2012/11/fig-example.png)
-~~~~ R
+```S
 #load script
 source("methylcircleplot.R") 
 #specify reference
@@ -83,7 +83,7 @@ methylcircleplot(ref.seq, bis.seq, fwd.primer, rev.primer,
 	reference=TRUE, NOME=2, col.gme = "lightgrey", col.gum = "white")
 #save figure
 dev.off()
-~~~~
+```
 
 ###Details
 Start up an R (or Rstudio) session with the sequence from clones in a `clone.fasta` file and this script saved in the same folder 

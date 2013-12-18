@@ -1,4 +1,4 @@
-# Example of how to use makeVenn.R {WIP}
+# Example of how to use makeVenn.R
 
 ## Intro
 
@@ -52,19 +52,21 @@ Make a venn diagram from 3 GRanges objects named small/medium/large (in the futu
 ```{r}
 source("makeVenn.R")
 
-# tmpbed = read.table("small.narrowPeak")
-    # tmpgrg = GRanges(seqnames = Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]),
-# end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9])
-# small = tmpgrg
-# tmpbed = read.table("medium.narrowPeak")
-    # tmpgrg = GRanges(seqnames = Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]),
-# end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9])
-# medium = tmpgrg
-# tmpbed = read.table("large.narrowPeak")
-# tmpgrg = GRanges(seqnames = Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]),
-    # end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9])
-# large = tmpgrg
-# save(small, medium, large, file="makeVenn.rd")
+if(0) {
+tmpbed = read.table('small.narrowPeak') 
+tmpgrg = GRanges(seqnames = Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]), 
+    end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9]) 
+small = tmpgrg 
+tmpbed = read.table('medium.narrowPeak') 
+tmpgrg = GRanges(seqnames = Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]), 
+    end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9]) 
+medium = tmpgrg 
+tmpbed = read.table('large.narrowPeak') 
+tmpgrg = GRanges(seqnames = Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]), 
+    end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9]) 
+large = tmpgrg 
+save(small, medium, large, file='makeVenn.rd')
+}
 
 load("makeVenn.rd")
 ```

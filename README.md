@@ -10,7 +10,7 @@ Most of the scripts are for visualizing sequencing overlaps from ChIP-seq / DNas
 * [igv.R](igv.R) -- R function to take genomic coordinates and get (pre-exisiting) [igv](http://www.broadinstitute.org/igv/) session to output snapshots at thoes locations 
 * [imageplot](myImagePlot.R) -- Is a simple example of making a plot in R with colors (corresponding to expression level) [example](http://www.phaget4.org/R/image_matrix.html)
 
-A tip for others using R on github: to highlight code on in markdown documents use 
+A tip for others using R or knitR on github: to highlight code on in markdown documents use 
 
     ```S
 

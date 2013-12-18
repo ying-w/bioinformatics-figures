@@ -1,4 +1,4 @@
-# Example of how to use makeVenn.R {WIP}
+# Example of how to use makeVenn.R
 
 ## Intro
 
@@ -50,24 +50,25 @@ in the current directory with score in the 5th column.
 Make a venn diagram from 3 GRanges objects named small/medium/large (in the future `peak2GRanges()` will take over this step)
 
 
-```r
+```S
 source("makeVenn.R")
 
-# tmpbed = read.table('small.narrowPeak') tmpgrg = GRanges(seqnames =
-# Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]),
-# end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9]) small =
-# tmpgrg tmpbed = read.table('medium.narrowPeak') tmpgrg =
-# GRanges(seqnames = Rle(tmpbed[,1]), ranges =
-# IRanges(start=as.numeric(tmpbed[,2]), end=as.numeric(tmpbed[,3]),
-# names=tmpbed[,4]), score=tmpbed[,9]) medium = tmpgrg tmpbed =
-# read.table('large.narrowPeak') tmpgrg = GRanges(seqnames =
-# Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]),
-# end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9]) large =
-# tmpgrg save(small, medium, large, file='makeVenn.rd')
+# tmpbed = read.table('small.narrowPeak') 
+# tmpgrg = GRanges(seqnames = Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]), 
+#     end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9]) 
+# small = tmpgrg 
+# tmpbed = read.table('medium.narrowPeak') 
+# tmpgrg = GRanges(seqnames = Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]), 
+#     end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9]) 
+# medium = tmpgrg 
+# tmpbed = read.table('large.narrowPeak') 
+# tmpgrg = GRanges(seqnames = Rle(tmpbed[,1]), ranges = IRanges(start=as.numeric(tmpbed[,2]), 
+#     end=as.numeric(tmpbed[,3]), names=tmpbed[,4]), score=tmpbed[,9]) 
+# large = tmpgrg 
+# save(small, medium, large, file='makeVenn.rd')
 
 load("makeVenn.rd")
 ```
-
 
 You can then put it into `makeVennRunall(small, medium, large)` or go through each of the steps individually.
 
@@ -75,7 +76,7 @@ Don't use `readinGRanges()` since this function is not complete and might be cha
 
 Quick run through: (`makeVennRunall()` will run these functions)
 
-```r
+```S
 glg = GRangesList(small, medium, large)  #GRanges list
 typ = rep(as.character(substitute(list(small, medium, large)))[-1L], as.numeric(lapply(glg, 
     length)))
@@ -87,7 +88,7 @@ createVenn(res, typ, overlap)
 
 ![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2.png) 
 
-```r
+```S
 overlap
 ```
 
@@ -103,7 +104,7 @@ overlap
 
 Make weighted venn diagram. When the differences in intersections are so great, the venn digram does not look good weighted.
 
-```r
+```S
 createVenn(res, typ, overlap, weighted = TRUE)  #will print out overlap matrix
 ```
 
@@ -113,7 +114,7 @@ createVenn(res, typ, overlap, weighted = TRUE)  #will print out overlap matrix
 ### Using makeVenn to cut out overlaps of interest
 Isolate regions in `large` that overlap all regions
 
-```r
+```S
 # large must be specified first in extractOverlap
 large_intersect_all = large[extractOverlap("large", "medium", "small", res = res, 
     typ = typ)]
@@ -124,7 +125,7 @@ length(large_intersect_all)
 ## [1] 890
 ```
 
-```r
+```S
 head(large_intersect_all)
 ```
 
@@ -147,7 +148,7 @@ head(large_intersect_all)
 
 Isolate regions that are unique to `medium`
 
-```r
+```S
 medium_unique = medium[extractOverlap("medium", res = res, typ = typ)]
 length(medium_unique)
 ```
@@ -156,7 +157,7 @@ length(medium_unique)
 ## [1] 416
 ```
 
-```r
+```S
 head(medium_unique)
 ```
 
@@ -179,7 +180,7 @@ head(medium_unique)
 
 Isolate regions that are self overlaps in `medium`
 
-```r
+```S
 medium_self_overlap = medium[extractOverlap("medium", "medium", res = res, typ = typ)]
 length(medium_self_overlap)
 ```
@@ -188,7 +189,7 @@ length(medium_self_overlap)
 ## [1] 4
 ```
 
-```r
+```S
 head(medium_self_overlap)
 ```
 
@@ -206,7 +207,7 @@ head(medium_self_overlap)
 ##       NA    NA    NA    NA    NA    NA ...    NA    NA    NA    NA    NA
 ```
 
-```r
+```S
 
 medium_fo = findOverlaps(medium_self_overlap, medium)
 head(medium_fo, n = 8)
@@ -228,7 +229,7 @@ head(medium_fo, n = 8)
 ##  8         4        9837
 ```
 
-```r
+```S
 head(medium[subjectHits(medium_fo)], n = 8)
 ```
 
@@ -254,7 +255,7 @@ head(medium[subjectHits(medium_fo)], n = 8)
 ## Additional info
 Output from each step:
 
-```r
+```S
 head(small)
 ```
 
@@ -274,7 +275,7 @@ head(small)
 ##       NA    NA    NA    NA    NA    NA ...    NA    NA    NA    NA    NA
 ```
 
-```r
+```S
 length(small)
 ```
 
@@ -282,7 +283,7 @@ length(small)
 ## [1] 1009
 ```
 
-```r
+```S
 head(medium)
 ```
 
@@ -302,7 +303,7 @@ head(medium)
 ##       NA    NA    NA    NA    NA    NA ...    NA    NA    NA    NA    NA
 ```
 
-```r
+```S
 length(medium)
 ```
 
@@ -310,7 +311,7 @@ length(medium)
 ## [1] 10279
 ```
 
-```r
+```S
 head(large)
 ```
 
@@ -330,7 +331,7 @@ head(large)
 ##       NA    NA    NA    NA    NA    NA ...    NA    NA    NA    NA    NA
 ```
 
-```r
+```S
 length(large)
 ```
 
@@ -338,7 +339,7 @@ length(large)
 ## [1] 23324
 ```
 
-```r
+```S
 
 head(typ)
 ```
@@ -347,7 +348,7 @@ head(typ)
 ## [1] "small" "small" "small" "small" "small" "small"
 ```
 
-```r
+```S
 length(typ)
 ```
 
@@ -355,7 +356,7 @@ length(typ)
 ## [1] 34612
 ```
 
-```r
+```S
 table(typ)
 ```
 
@@ -365,7 +366,7 @@ table(typ)
 ##  23324  10279   1009
 ```
 
-```r
+```S
 head(fo)  #special class
 ```
 
@@ -383,7 +384,7 @@ head(fo)  #special class
 ##  6         3       11316
 ```
 
-```r
+```S
 nrow(as.matrix(fo))
 ```
 
@@ -391,7 +392,7 @@ nrow(as.matrix(fo))
 ## [1] 24180
 ```
 
-```r
+```S
 head(res)
 ```
 
@@ -405,7 +406,7 @@ head(res)
 ## [6,]     1      1     0
 ```
 
-```r
+```S
 dim(res)
 ```
 
@@ -413,7 +414,7 @@ dim(res)
 ## [1] 34612     3
 ```
 
-```r
+```S
 
 sessionInfo()
 ```
