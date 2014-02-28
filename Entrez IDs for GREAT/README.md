@@ -63,7 +63,7 @@ All columns are tab seperated
 
 ## Matching
 
-```r
+```s
 # read in all GREAT genes
 greatall = read.table("Hg19.great2.0.genes.txt", stringsAsFactors = F)
 greatout = cbind(greatall, entrez = NA, ensembl = NA, refseq = NA)
@@ -82,8 +82,7 @@ head(greatall)
 ## 6 32 chr1 895966  + KLHL17 chr1:895966
 ```
 
-```r
-
+```s
 # read in current knownGenes from UCSC (retrieved 2/2014)
 ucscall = read.table("knowngeneall.gz", sep = "\t", stringsAsFactors = F)
 ucscall = cbind(ucscall, chrtss = paste(ucscall[, 1], ucscall[, 3], sep = ":"), 
@@ -110,7 +109,7 @@ head(ucscall)
 ## 6 chr1:18061
 ```
 
-```r
+```s
 
 # match using TSS
 fixme = is.na(match(greatall[, 6], ucscall[, 9]))
@@ -123,7 +122,7 @@ table(fixme)  #992
 ## 16752   992
 ```
 
-```r
+```s
 # greatall[head(which(fixme)),]
 greatout[!fixme, 6] = ucscall[match(greatall[, 6], ucscall[, 9])[!fixme], 7]  # entrez
 greatout[!fixme, 7] = ucscall[match(greatall[, 6], ucscall[, 9])[!fixme], 6]  # ensembl
@@ -141,7 +140,7 @@ head(greatout)
 ## 6 32 chr1 895966  + KLHL17 339451 ENST00000338591    NM_198317
 ```
 
-```r
+```s
 
 # match using gene symbol from ucsc
 canonical = read.table("canonical.gz", sep = "\t", stringsAsFactors = F)
@@ -165,7 +164,7 @@ head(canonical)
 ## 6    NR_039983
 ```
 
-```r
+```s
 fixme2 = fixme & is.na(match(greatall[, 5], canonical[, 5]))
 table(fixme2)  #51
 ```
@@ -176,7 +175,7 @@ table(fixme2)  #51
 ## 17693    51
 ```
 
-```r
+```s
 # greatall[head(which(fixme2)),]
 greatout[!fixme2, 6] = ucscall[match(greatall[, 6], ucscall[, 9])[!fixme2], 
     7]  # entrez
@@ -218,7 +217,7 @@ library(illuminaHumanv4.db)
 ## Loading required package: DBI
 ```
 
-```r
+```s
 alias2ez = mget(as.character(greatall[fixme2, 5]), org.Hs.egALIAS2EG, ifnotfound = NA)
 alias2ez[lapply(alias2ez, length) > 1] = NA  #nonunique 
 fixme3 = is.na(alias2ez)
@@ -231,7 +230,7 @@ table(fixme3)  #6
 ##    45     6
 ```
 
-```r
+```s
 
 greatall[fixme2, ][fixme3, ]
 ```
@@ -246,7 +245,7 @@ greatall[fixme2, ][fixme3, ]
 ## 14459 24268  chr6 66011353  +     AK302514  chr6:66011353
 ```
 
-```r
+```s
 # C11orf2 -> VPS51 DKFZp761E198 -> AP5B1 LOC399940 -> TRIM53AP (closest
 # match) LOC399940 -> TRIM53AP (closest match) LOC646508 -> FAM90A27P
 # (closest match) AK302514 -> LOC441155
@@ -277,7 +276,7 @@ head(greatout)
 ## 6 32 chr1 895966  + KLHL17 339451 ENST00000338591    NM_198317
 ```
 
-```r
+```s
 
 # write.table(greatout,
 # file=paste('Hg19.great2.0.genes.entrez.',format(Sys.time(),
@@ -317,8 +316,74 @@ sessionInfo()
 # Running great with custom set of TSS
 [Download](http://bejerano.stanford.edu/help/display/GREAT/Download) and follow the instructions in the README
 
-Also follow install directions for [kent tools](http://genome-source.cse.ucsc.edu/gitweb/?p=kent.git;a=blob;f=src/product/README.building.source) up to 3a
+Also follow install directions for [kent tools](http://genome-source.cse.ucsc.edu/gitweb/?p=kent.git;a=blob;f=src/product/README.building.source) up to 3a.
+Step 2 is not necessary but step 1 is essential, rememeber to restart shell after exporting the variable and check that it is successful. 
+Only jkweb.a is need and should be found in kent/src/lib/$MACHTYPE/jkweb.a
 
-[intersectBed](http://bedtools.readthedocs.org/en/latest/content/tools/intersect.html?highlight=intersectbed) can be used to find ChIP-seq regions overlapping gene regions.
+I ran into some linking issues compiling GREAT and had to make the following changes to the makefile:
 
-The last annotation release from NCBI using hg19 is v105 and can be found [here](ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/H_sapiens/ARCHIVE/ANNOTATION_RELEASE.105/)
+```
+$ diff makefile makefile.old 
+1c1
+< KENT_DIR = ../kent/src
+---
+> KENT_DIR = path/to/your/kent/src
+10c10
+< LDFLAGS= -lssl -pthread -lcrypto 
+---
+> LDFLAGS=
+18c18
+< 	$(CC) ${COPT} -o $@ $(RDOBJECTS) ${LIBS} $(LDFLAGS)
+---
+> 	$(CC) $(LDFLAGS) ${COPT} -o $@ $(RDOBJECTS) ${LIBS}
+21c21
+< 	$(CC) ${COPT} -o $@ $(POBJECTS) ${LIBS} $(LDFLAGS)
+---
+> 	$(CC) $(LDFLAGS) ${COPT} -o $@ $(POBJECTS) ${LIBS}
+```
+
+`createRegulatoryDomains` has 4 required parameters: <TSS.in> <chrom.sizes> <association rule> <output file name> 
+
+The `TSS.in` file is created from annotations. I use the last annotation release from NCBI on hg19 (v105, can be found [here](ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/H_sapiens/ARCHIVE/ANNOTATION_RELEASE.105/)).
+I wrote a short perl script to format this file so it can be used for input:
+
+```perl
+#!/usr/bin/perl -w
+#ying Wu
+# Extract Entrez ID and Hugo ID from refseq gff3 annotation file
+# also change chromosome names
+# Typical run:
+# zcat ref_GRCh37.p13_top_level.gff3.gz | grep -P "\tgene\t" | grep -v ";pseudo=true" | perl parseGFF3.pl | cut -f 1,10,11,12 #~23k genes
+
+use strict;
+use warnings;
+
+foreach(<STDIN>)
+{
+    chomp;
+    my $line = $_;
+    $line =~ s/^NC_0000+/chr/;
+    $line =~ s/\.\d+\t/\t/;
+    $line =~ s/^chr23\t/chrX\t/;
+    $line =~ s/^chr24\t/chrY\t/;
+    
+    #ID=gene0;Name=DDX11L1;Dbxref=GeneID:100287102,HGNC:37102;description=DEAD%2FH %28Asp-Glu-Ala-Asp%2FHis%29 box helicase 11 like 1;gbkey=Gene;gene=DDX11L1;part=1%2F1;pseudo=true
+    if($line =~ m/^chr.*gene\t(\d+)\t(\d+)\t.+\t\+\t.+Name=(.+);Dbxref=GeneID:(\d+),HGNC:(\d+)/) 
+    { #+ strand
+        print "$line\t$1\t\+\t$3|$4|$5\n";
+    } 
+    elsif ($line =~ m/^chr.*gene\t(\d+)\t(\d+)\t.+\t\-\t.+Name=(.+);Dbxref=GeneID:(\d+),HGNC:(\d+)/)
+    { #- strand
+        print "$line\t$2\t\-\t$3|$4|$5\n"; 
+    }
+}
+```
+Save this perl script as `parseGFF3.pl` and run with:
+
+    zcat ref_GRCh37.p13_top_level.gff3.gz | grep -P "\tgene\t" | grep -v ";pseudo=true" | perl parseGFF3.pl | cut -f 1,10,11,12 > hg19.v105.TSS.in 
+    ./createRegulatoryDomains hg19.v105.TSS.in chromsizes19.tab twoClosest hg19.v105.regDoms.out 
+    
+Make sure to change twoClosest to the association rule that you want. Additionally, some optional parameters such as `-maxExtension` can also be set.
+For the sake of completeness, I have included compressed hg19.v105.TSS.in and chromsizes19.tab
+
+Lastly, use [intersectBed](http://bedtools.readthedocs.org/en/latest/content/tools/intersect.html) to find ChIP-seq regions overlapping gene regions defined in the regDoms.out file.
