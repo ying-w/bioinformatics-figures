@@ -179,19 +179,29 @@ foreach(<STDIN>)
 {
     chomp;
     my $line = $_;
+    #fix chromosome name
     $line =~ s/^NC_0000+/chr/;
     $line =~ s/\.\d+\t/\t/;
     $line =~ s/^chr23\t/chrX\t/;
     $line =~ s/^chr24\t/chrY\t/;
     
-    #ID=gene0;Name=DDX11L1;Dbxref=GeneID:100287102,HGNC:37102;description=DEAD%2FH %28Asp-Glu-Ala-Asp%2FHis%29 box helicase 11 like 1;gbkey=Gene;gene=DDX11L1;part=1%2F1;pseudo=true
-    if($line =~ m/^chr.*gene\t(\d+)\t(\d+)\t.+\t\+\t.+Name=(.+);Dbxref=GeneID:(\d+),HGNC:(\d+)/) 
+    #Examples
+    #ID=gene2;Name=MIR1302-2;Dbxref=GeneID:100302278,HGNC:35294,miRBase:MI0006363;description=microRNA 1302-2;gbkey=Gene;gene=MIR1302-2;gene_synonym=hsa-mir-1302-2,MIRN1302-2;part=1%2F1
+    #ID=gene18893;Name=LPPR1;Dbxref=GeneID:54886,HPRD:17906;description=lipid phosphate phosphatase-related protein type 1;gbkey=Gene;gene=LPPR1;gene_synonym=PRG-3,RP11-35N6.1;part=1%2F1
+    my ($hugo, $HPRD, $synonym, $other);
+    $hugo = $HPRD = $synonym = $other = "";
+    if($line =~ m/,HGNC:(\d+)/) { $hugo = $1; }
+    if($line =~ m/,HPRD:(\d+)/) { $HPRD = $1; }
+    if($line =~ m/;gene_synonym=(.+?);/) { $synonym = $1; }
+    $other = join('|', $hugo, $HPRD, $synonym);
+    
+    if($line =~ m/^chr.*gene\t(\d+)\t(\d+)\t.+\t\+\t.+Name=(.+);Dbxref=GeneID:(\d+)/) 
     { #+ strand
-        print "$line\t$1\t\+\t$3|$4|$5\n";
+        print "$line\t$1\t\+\t$3|$4|$other\n";
     } 
-    elsif ($line =~ m/^chr.*gene\t(\d+)\t(\d+)\t.+\t\-\t.+Name=(.+);Dbxref=GeneID:(\d+),HGNC:(\d+)/)
+    elsif ($line =~ m/^chr.*gene\t(\d+)\t(\d+)\t.+\t\-\t.+Name=(.+);Dbxref=GeneID:(\d+)/)
     { #- strand
-        print "$line\t$2\t\-\t$3|$4|$5\n"; 
+        print "$line\t$2\t\-\t$3|$4|$other\n"; 
     }
 }
 ```
@@ -203,4 +213,4 @@ Save this perl script as `parseGFF3.pl` and run with:
 Make sure to change twoClosest to the association rule that you want. Additionally, some optional parameters such as `-maxExtension` can also be set.
 For the sake of completeness, I have included compressed hg19.v105.TSS.in and chromsizes19.tab
 
-Lastly, use [intersectBed](http://bedtools.readthedocs.org/en/latest/content/tools/intersect.html) to find ChIP-seq regions overlapping gene regions defined in the regDoms.out file.
+Lastly, use [intersectBed](http://bedtools.readthedocs.org/en/latest/content/tools/intersect.html) `-loj` command to find ChIP-seq regions overlapping gene regions defined in the regDoms.out file.
