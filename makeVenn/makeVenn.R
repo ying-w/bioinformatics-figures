@@ -235,7 +235,9 @@ createOverlapMatrix = function(res, typ) {
             current_row = current_row+1 
         } else if(i == last_printed-2) { 
             if(i == 0) { #special case: self overlap (only explicitly shown in even comparisons)
-                overlap[current_row,] = colSums(apply(rbind(levels(tf), levels(tf)), 2, extractOverlap, res=res, typ=typ))
+                # do not use regular apply here, apply gives inconsistant output (list or matrix)
+                # depending on dimensions of input (if it can be coerced into matrix)
+                overlap[current_row,] = sapply(lapply(lapply(levels(tf), rep, 2), extractOverlap, res=res, typ=typ), sum)
                 rownames(overlap)[current_row] = "self"
                 current_row = current_row+1 
             } else { # base case, combn in apply is the key part
