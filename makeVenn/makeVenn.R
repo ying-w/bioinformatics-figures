@@ -170,7 +170,7 @@ readinGRanges = function(...) {
     #typ = rep(2^(0:(length(glg)-1)),as.numeric(lapply(glg, length))) 
     #fo = findOverlaps(c(g1.r, g2.r, g12.r, .ignoreElementMetadata=TRUE), ignoreSelf=T)
     typ = rep(as.character(substitute(list(...)))[-1L], as.numeric(lapply(glg, length))) #since lapplay returns list
-    fo = findOverlaps(unlist(glg), ignoreSelf=T)
+    fo = findOverlaps(unlist(glg), drop.self=T)
     
     res = createResultMatrix(typ, fo)
     #cat(paste(c(paste(colnames(res), as.character(substitute(list(...)))[-1L],sep=" = "),""),collapse="\n"))    
@@ -310,7 +310,7 @@ createVenn = function(res, typ, overlap = NULL, name = NULL, weighted = FALSE, m
     #create venn diagram using Vennerable
     plot.new() #this is needed for text
     vc = sapply(1:(2^(n)-1), function(x) { round(median(overlap[counter %in% x])) })
-    plotVenn(Venn(SetNames=name, Weight=c(0,vc)), doWeights=weighted)
+    plot(Venn(SetNames=name, Weight=c(0,vc)), doWeights=weighted)
     # cannot pass in ... to above function
     #text(-0.1, 0.01, main) #the coordinates change
     # mtext(main, side=1, at=0) #this is an ugly hack since cannot pass to plotVenn()
